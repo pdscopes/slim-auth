@@ -81,7 +81,7 @@ abstract class Authentication
      */
     protected function unauthenticated(Request $request, Response $response, callable $next)
     {
-        throw new NotAuthenticatedException($request, $response);
+        throw new NotAuthenticatedException('Not Authenticated', 401);
     }
 
     /**

@@ -61,7 +61,7 @@ abstract class Authorisation
      */
     protected function unauthorised(Request $request, Response $response, callable $next)
     {
-        throw new NotAuthorisedException($request, $response);
+        throw new NotAuthorisedException('Not Authorised', 403);
     }
 
     /**
