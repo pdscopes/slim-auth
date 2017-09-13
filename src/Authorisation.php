@@ -56,11 +56,12 @@ abstract class Authorisation
      * @param Response $response
      * @param callable $next
      *
+     * @throws NotAuthorisedException
      * @return Response
      */
     protected function unauthorised(Request $request, Response $response, callable $next)
     {
-        return $response->withStatus(403);
+        throw new NotAuthorisedException($request, $response);
     }
 
     /**

@@ -36,6 +36,6 @@ class JwtAuthentication extends Authentication
 
     protected  function validate($token)
     {
-        return is_array($token);
+        return is_object($token);
     }
 }

@@ -4,6 +4,7 @@ namespace Slim\Middleware;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Slim\Exception\NotFoundException;
 use Slim\Http\Request;
 use Slim\Http\Response;
 
@@ -75,11 +76,12 @@ abstract class Authentication
      * @param Response $response
      * @param callable $next
      *
+     * @throws NotAuthenticatedException
      * @return Response
      */
     protected function unauthenticated(Request $request, Response $response, callable $next)
     {
-        return $response->withStatus(401);
+        throw new NotAuthenticatedException($request, $response);
     }
 
     /**
@@ -93,7 +95,9 @@ abstract class Authentication
      */
     protected function authenticated(Request $request, Response $response, callable $next)
     {
-        $this->log(LogLevel::DEBUG, 'Request Authenticated', ['token' => $request->getAttribute('token')]);
+        $this->log(LogLevel::DEBUG, 'Request Authenticated', [
+            'token' => $request->getAttribute($this->options['attribute'])
+        ]);
         return $next($request, $response);
     }
 
@@ -148,7 +152,7 @@ abstract class Authentication
             $header  = $headers[$this->options['header']] ?? '';
         }
 
-        if (preg_match($this->options['regex'], $header, $matches)) {
+        if (!empty($header) && preg_match($this->options['regex'], $header, $matches)) {
             return $matches[1];
         }
 
