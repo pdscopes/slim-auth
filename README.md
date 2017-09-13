@@ -17,6 +17,8 @@ Default options for authentication are:
 ]
 ```
 
+When authentication fails an `NotAuthenticatedException` exception is thrown.
+
 ### SimpleTokenAuthentication
 To add the simple token authenticator to your Slim app:
 ```php
@@ -38,5 +40,7 @@ $app->add(new JwtAuthentication([
 
 ## Authorisation
 A middleware to determine whether an authenticated request has authorisation to access the requested route.
+
+When Authorisation fails an `NotAuthorisedException` exception is thrown.
 
 _Note_: If you need to access the route from within your app middleware you must set '`determineRouteBeforeAppMiddleware`' to `true` in your configuration otherwise `getAttribute('route')` will return `null`. The route is always available in route middleware.
