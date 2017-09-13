@@ -2,7 +2,7 @@
 
 namespace Slim\Middleware;
 
-class NotAuthorisedException extends \Slim\Exception\SlimException
+class NotAuthorisedException extends \Exception
 {
 
 }
