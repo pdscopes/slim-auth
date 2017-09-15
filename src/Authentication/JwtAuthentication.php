@@ -11,9 +11,9 @@ class JwtAuthentication extends Authentication
 {
     public function __construct(array $options)
     {
+        $this->options['regex'] = '/Bearer\s+(.*)$/i';
         parent::__construct($options);
         $this->options += [
-            'regex'     => '/Bearer\s+(.*)$/i',
             'secret'    => '',
             'algorithm' =>  ['HS256', 'HS512', 'HS384'],
         ];
