@@ -61,7 +61,10 @@ abstract class Authorisation
      */
     protected function unauthorised(Request $request, Response $response, callable $next)
     {
-        throw new NotAuthorisedException('Not Authorised', 403);
+        if (!$this->ci->has('notAuthorisedHandler')) {
+            throw new NotAuthorisedException('Not Authorised', 403);
+        }
+        return $this->ci['notAuthorisedHandler']($request, $response);
     }
 
     /**

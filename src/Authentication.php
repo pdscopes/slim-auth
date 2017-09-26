@@ -2,9 +2,9 @@
 
 namespace Slim\Middleware;
 
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use Slim\Exception\NotFoundException;
 use Slim\Http\Request;
 use Slim\Http\Response;
 
@@ -16,6 +16,11 @@ use Slim\Http\Response;
  */
 abstract class Authentication
 {
+    /**
+     * @var ContainerInterface
+     */
+    protected $ci;
+
     /**
      * @var array
      */
@@ -33,10 +38,12 @@ abstract class Authentication
     /**
      * Middleware constructor.
      *
-     * @param array $options
+     * @param ContainerInterface $ci
+     * @param array              $options
      */
-    public function __construct(array $options)
+    public function __construct(ContainerInterface $ci, array $options)
     {
+        $this->ci      = $ci;
         $this->options = $options + $this->options;
     }
 
@@ -81,7 +88,10 @@ abstract class Authentication
      */
     protected function unauthenticated(Request $request, Response $response, callable $next)
     {
-        throw new NotAuthenticatedException('Not Authenticated', 401);
+        if (!$this->ci->has('notAuthenticatedHandler')) {
+            throw new NotAuthenticatedException('Not Authenticated', 401);
+        }
+        return $this->ci['notAuthenticatedHandler']($request, $response);
     }
 
     /**

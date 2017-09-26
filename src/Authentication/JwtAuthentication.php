@@ -3,16 +3,18 @@
 namespace Slim\Middleware\Authentication;
 
 use Firebase\JWT\JWT;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LogLevel;
 use Slim\Http\Request;
 use Slim\Middleware\Authentication;
 
 class JwtAuthentication extends Authentication
 {
-    public function __construct(array $options)
+    public function __construct(ContainerInterface $ci, array $options)
     {
-        $this->options['regex'] = '/Bearer\s+(.*)$/i';
-        parent::__construct($options);
+        $this->options['header'] = 'Authorization';
+        $this->options['regex']  = '/Bearer\s+(.*)$/i';
+        parent::__construct($ci, $options);
         $this->options += [
             'secret'    => '',
             'algorithm' =>  ['HS256', 'HS512', 'HS384'],
