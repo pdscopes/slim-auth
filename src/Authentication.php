@@ -86,7 +86,7 @@ abstract class Authentication
      * @throws NotAuthenticatedException
      * @return Response
      */
-    protected function unauthenticated(Request $request, Response $response, callable $next)
+    public function unauthenticated(Request $request, Response $response, callable $next)
     {
         if (!$this->ci->has('notAuthenticatedHandler')) {
             throw new NotAuthenticatedException('Not Authenticated', 401);
@@ -103,7 +103,7 @@ abstract class Authentication
      *
      * @return mixed
      */
-    protected function authenticated(Request $request, Response $response, callable $next)
+    public function authenticated(Request $request, Response $response, callable $next)
     {
         $this->log(LogLevel::DEBUG, 'Request Authenticated', [
             'token' => $request->getAttribute($this->options['attribute'])
@@ -118,7 +118,7 @@ abstract class Authentication
      *
      * @return bool
      */
-    protected function isSecure(Request $request)
+    public function isSecure(Request $request)
     {
         // No need if not set to be secure
         if ($this->options['secure'] === false) {
@@ -139,7 +139,7 @@ abstract class Authentication
      *
      * @return mixed
      */
-    protected function fetchToken(Request $request)
+    public function fetchToken(Request $request)
     {
         $header = '';
 
@@ -154,12 +154,6 @@ abstract class Authentication
         if (empty($header)) {
             $headers = $request->getHeader($this->options['header']);
             $header  = $headers[0] ?? '';
-        }
-
-        // Try apache_request_headers as a last resort
-        if (empty($header) && function_exists('apache_request_headers')) {
-            $headers = apache_request_headers();
-            $header  = $headers[$this->options['header']] ?? '';
         }
 
         if (!empty($header) && preg_match($this->options['regex'], $header, $matches)) {
@@ -188,12 +182,12 @@ abstract class Authentication
     /**
      * Checks the validity of the the given token and MUST return the result.
      *
-     * This method MAY also take the operatunity to store information regarding the
+     * This method MAY also take the opportunity to store information regarding the
      * entity requesting authentication in the container, e.g. a User object.
      *
      * @param mixed $token
      *
      * @return bool True if the token is valid, false otherwise
      */
-    protected abstract function validate($token);
+    public abstract function validate($token);
 }

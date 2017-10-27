@@ -10,6 +10,12 @@ use Slim\Middleware\Authentication;
 
 class JwtAuthentication extends Authentication
 {
+    /**
+     * JwtAuthentication constructor.
+     *
+     * @param \Psr\Container\ContainerInterface $ci
+     * @param array                             $options
+     */
     public function __construct(ContainerInterface $ci, array $options)
     {
         $this->options['header'] = 'Authorization';
@@ -21,7 +27,10 @@ class JwtAuthentication extends Authentication
         ];
     }
 
-    protected function fetchToken(Request $request)
+    /**
+     * @InheritDoc
+     */
+    public function fetchToken(Request $request)
     {
         $token = parent::fetchToken($request);
         if (empty($token)) {
@@ -36,7 +45,10 @@ class JwtAuthentication extends Authentication
         }
     }
 
-    protected  function validate($token)
+    /**
+     * @InheritDoc
+     */
+    public function validate($token)
     {
         return is_object($token);
     }

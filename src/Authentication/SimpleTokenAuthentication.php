@@ -7,13 +7,22 @@ use Slim\Middleware\Authentication;
 
 class SimpleTokenAuthentication extends Authentication
 {
+    /**
+     * SimpleTokenAuthentication constructor.
+     *
+     * @param \Psr\Container\ContainerInterface $ci
+     * @param array                             $options
+     */
     public function __construct(ContainerInterface $ci, array $options)
     {
         parent::__construct($ci, $options);
         $this->options += ['validate' => null];
     }
 
-    protected  function validate($token)
+    /**
+     * @InheritDoc
+     */
+    public function validate($token)
     {
         if (!is_callable($this->options['validate'])) {
             return false;
