@@ -31,6 +31,7 @@ abstract class Authentication
         'header'      => 'X-Auth',
         'regex'       => '/(.*)/',
         'cookie'      => 'X-Auth',
+        'payload'     => null,
         'attribute'   => 'token',
         'logger'      => null,
     ];
@@ -91,7 +92,14 @@ abstract class Authentication
         if (!$this->ci->has('notAuthenticatedHandler')) {
             throw new NotAuthenticatedException('Not Authenticated', 401);
         }
-        return $this->ci['notAuthenticatedHandler']($request, $response);
+
+        // Bind anonymous functions to the container
+        $callable = $this->ci->get('notAuthenticatedHandler');
+        if ($callable instanceof \Closure) {
+            $callable = $callable->bindTo($this->ci);
+        }
+
+        return $callable($request, $response);
     }
 
     /**
@@ -141,29 +149,37 @@ abstract class Authentication
      */
     public function fetchToken(Request $request)
     {
-        $header = '';
+        $token = '';
 
         // If using PHP in CGI mode and non-standard environment
         foreach ((array) $this->options['environment'] as $environment) {
-            if (($header = $request->getServerParam($environment, '')) !== '') {
+            if (($token = $request->getServerParam($environment, '')) !== '') {
                 break;
             }
         }
 
         // Fall back on the header name from the options array
-        if (empty($header)) {
+        if (empty($token) && !empty($this->options['header'])) {
             $headers = $request->getHeader($this->options['header']);
-            $header  = $headers[0] ?? '';
+            $token   = $headers[0] ?? '';
         }
 
-        if (!empty($header) && preg_match($this->options['regex'], $header, $matches)) {
+        // Fall back on the payload
+        if (empty($token) && !empty($this->options['payload'])) {
+            $token = $request->getParsedBodyParam($this->options['payload'], '');
+        }
+
+        // Finally fall back on cookie
+        if (empty($token) && !empty($this->options['cookie'])) {
+            $token = $request->getCookieParam($this->options['cookie'], '');
+        }
+
+        // Return the token
+        if (!empty($token) && preg_match($this->options['regex'], $token, $matches)) {
             return $matches[1];
+        } else {
+            return '';
         }
-
-        // If allowed fall back to cookie
-        return $this->options['cookie']
-            ? $request->getCookieParam($this->options['cookie'], '')
-            : '';
     }
 
     /**
