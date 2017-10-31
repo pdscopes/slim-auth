@@ -18,13 +18,12 @@ class JwtAuthentication extends Authentication
      */
     public function __construct(ContainerInterface $ci, array $options)
     {
-        $this->options['header'] = 'Authorization';
-        $this->options['regex']  = '/Bearer\s+(.*)$/i';
-        parent::__construct($ci, $options);
-        $this->options += [
+        parent::__construct($ci, $options + [
+            'header'    => 'Authorization',
+            'regex'     => '/Bearer\s+(.*)$/i',
             'secret'    => '',
-            'algorithm' =>  ['HS256', 'HS512', 'HS384'],
-        ];
+            'algorithm' => ['HS256', 'HS512', 'HS384'],
+        ]);
     }
 
     /**
