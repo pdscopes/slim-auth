@@ -1,4 +1,5 @@
 # madesimple/slim-auth
+[![Build Status](https://travis-ci.org/pdscopes/slim-auth.svg?branch=master)](https://travis-ci.org/pdscopes/slim-auth)
 Authentication and authorisation middleware for Slim framework
 
 ## Authentication
