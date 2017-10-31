@@ -15,8 +15,9 @@ class SimpleTokenAuthentication extends Authentication
      */
     public function __construct(ContainerInterface $ci, array $options)
     {
-        parent::__construct($ci, $options);
-        $this->options += ['validate' => null];
+        parent::__construct($ci, $options + [
+            'validate' => null,
+        ]);
     }
 
     /**
@@ -28,6 +29,12 @@ class SimpleTokenAuthentication extends Authentication
             return false;
         }
 
-        return $this->options['validate']($token);
+        // Bind anonymous functions to the container
+        $callable = $this->options['validate'];
+        if ($callable instanceof \Closure) {
+            $callable = $callable->bindTo($this->ci);
+        }
+
+        return $callable($token);
     }
 }
