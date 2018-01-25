@@ -35,14 +35,13 @@ abstract class Authorisation
      * @param \Closure $next
      *
      * @return mixed
+     * @throws \Slim\Middleware\NotAuthorisedException
      */
     public function __invoke(Request $request, Response $response, $next)
     {
-        $rules = $this->fetchRules($request);
-
         // Determine authorisation
-        if (!$this->hasAuthorisation($request, $rules)) {
-            $this->log(LogLevel::DEBUG, 'Request does not have authorisation', ['rules' => $rules]);
+        if (!$this->hasAuthorisation($request)) {
+            $this->log(LogLevel::DEBUG, 'Request does not have authorisation');
             return $this->unauthorised($request, $response, $next);
         }
 
@@ -82,24 +81,6 @@ abstract class Authorisation
     }
 
     /**
-     * @param Request $request
-     * @return array
-     */
-    protected function fetchRules(Request $request)
-    {
-        if ($request->getAttribute('route') === null) {
-            return [];
-        }
-
-        $rules = $request->getAttribute('route')->getArgument('auth', []);
-        if (!is_array($rules)) {
-            $rules = explode(',', $rules);
-        }
-
-        return $rules;
-    }
-
-    /**
      * @see LogLevel
      * @param string $level
      * @param string $message
@@ -117,10 +98,7 @@ abstract class Authorisation
      * request with the specified rules.
      *
      * @param Request $request
-     * @param array $rules
      * @return bool
      */
-    protected abstract function hasAuthorisation(Request $request, array $rules);
-
-
+    protected abstract function hasAuthorisation(Request $request);
 }
