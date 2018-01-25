@@ -40,7 +40,8 @@ class JwtAuthenticationTest extends TestCase
             'relaxed'     => ['localhost', '127.0.0.1'],
             'environment' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
             'header'      => 'Authorization',
-            'regex'       => '/Bearer\s+(.*)$/i',
+            'regex'       => '/(Bearer\s+)?(.*)$/i',
+            'index'       => 2,
             'cookie'      => 'X-Auth',
             'payload'     => null,
             'attribute'   => 'token',
@@ -65,7 +66,8 @@ class JwtAuthenticationTest extends TestCase
             'relaxed'     => ['localhost', '127.0.0.1'],
             'environment' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
             'header'      => 'Authorization',
-            'regex'       => '/Bearer\s+(.*)$/i',
+            'regex'       => '/(Bearer\s+)?(.*)$/i',
+            'index'       => 2,
             'cookie'      => 'X-Auth',
             'payload'     => null,
             'attribute'   => 'token',
@@ -89,6 +91,7 @@ class JwtAuthenticationTest extends TestCase
             ['environment', ['ENVIRONMENT_VARIABLE']],
             ['header', 'x-header'],
             ['regex', 'regex pattern'],
+            ['index', 5],
             ['cookie', 'cookie name'],
             ['attribute', 'attribute name'],
             ['logger', new \stdClass],
@@ -102,49 +105,45 @@ class JwtAuthenticationTest extends TestCase
      */
     public function testFetchTokenValid()
     {
-        $encoded = JWT::encode(['data' => 'value'], 'secret', 'HS256');
-        $token   = 'Bearer ' . $encoded;
-        $auth    = new JwtAuthentication($this->ci, [
-            'environment' => [],
-            'secret'      => 'secret',
-            'algorithm'   => ['HS256'],
-        ]);
+        $token = '123';
+        $auth    = new JwtAuthentication($this->ci, []);
 
         $mockRequest = $this->getMockBuilder(Request::class)->disableOriginalConstructor()->getMock();
         $mockRequest
-            ->expects($this->once())->method('getHeader')->with('Authorization')->willReturn([$token]);
+            ->expects($this->once())->method('getHeader')->with('Authorization')->willReturn(['Bearer ' . $token]);
 
-        $this->assertEquals(JWT::decode($encoded, 'secret', ['HS256']), $auth->fetchToken($mockRequest));
+        $this->assertEquals($token, $auth->fetchToken($mockRequest));
     }
 
     /**
-     * Test fetching an invalid JWT.
-     */
-    public function testFetchTokenInvalid()
-    {
-        $encoded = 'invalid token';
-        $token   = 'Bearer ' . $encoded;
-        $auth    = new JwtAuthentication($this->ci, [
-            'environment' => [],
-            'secret'      => 'secret',
-            'algorithm'   => ['HS256'],
-        ]);
-
-        $mockRequest = $this->getMockBuilder(Request::class)->disableOriginalConstructor()->getMock();
-        $mockRequest
-            ->expects($this->once())->method('getHeader')->with('Authorization')->willReturn([$token]);
-
-        $this->assertEquals('', $auth->fetchToken($mockRequest));
-    }
-
-    /**
-     * Test validating an already parsed JWT.
+     * Test validating a valid JWT.
      */
     public function testValidate()
     {
-        $auth = new JwtAuthentication($this->ci, []);
+        $encoded = JWT::encode(['data' => 'value'], 'secret', 'HS256');
 
-        $this->assertTrue($auth->validate(new \stdClass));
-        $this->assertFalse($auth->validate(''));
+        $auth = new JwtAuthentication($this->ci, [
+            'environment' => [],
+            'secret'      => 'secret',
+            'algorithm'   => ['HS256'],
+        ]);
+
+        $this->assertTrue($auth->validate($encoded));
+    }
+
+    /**
+     * Test validating an invalid JWT.
+     */
+    public function testValidateInvalid()
+    {
+        $encoded = 'invalid-token';
+
+        $auth = new JwtAuthentication($this->ci, [
+            'environment' => [],
+            'secret'      => 'secret',
+            'algorithm'   => ['HS256'],
+        ]);
+
+        $this->assertFalse($auth->validate($encoded));
     }
 }

@@ -162,11 +162,6 @@ class AuthenticationTest extends TestCase
             ->method('authenticated')
             ->with($this->mockRequest, $this->mockResponse, $this->mockNext);
 
-        $this->mockRequest
-            ->expects($this->once())
-            ->method('withAttribute')
-            ->with('ATTRIBUTE', 'token')
-            ->willReturnSelf();
 
         $authentication->__invoke($this->mockRequest, $this->mockResponse, $this->mockNext);
     }

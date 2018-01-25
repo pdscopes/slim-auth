@@ -20,7 +20,8 @@ class JwtAuthentication extends Authentication
     {
         parent::__construct($ci, $options + [
             'header'    => 'Authorization',
-            'regex'     => '/Bearer\s+(.*)$/i',
+            'regex'     => '/(Bearer\s+)?(.*)$/i',
+            'index'     => 2,
             'secret'    => '',
             'algorithm' => ['HS256', 'HS512', 'HS384'],
         ]);
@@ -29,26 +30,17 @@ class JwtAuthentication extends Authentication
     /**
      * @InheritDoc
      */
-    public function fetchToken(Request $request)
-    {
-        $token = parent::fetchToken($request);
-        if (empty($token)) {
-            return $token;
-        }
-
-        try {
-            return JWT::decode($token, $this->options['secret'], (array) $this->options['algorithm']);
-        } catch (\Exception $exception) {
-            $this->log(LogLevel::WARNING, $exception->getMessage(), ['token' => $token]);
-            return '';
-        }
-    }
-
-    /**
-     * @InheritDoc
-     */
     public function validate($token)
     {
-        return is_object($token);
+        try {
+            // Attempt to decode the token
+            $token = JWT::decode($token, $this->options['secret'], (array) $this->options['algorithm']);
+            // Override the stored token if successful
+            $this->ci[$this->options['attribute']] = $token;
+            return true;
+        } catch (\Exception $exception) {
+            $this->log(LogLevel::WARNING, $exception->getMessage(), ['token' => $token]);
+            return false;
+        }
     }
 }

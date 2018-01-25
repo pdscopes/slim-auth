@@ -30,6 +30,7 @@ abstract class Authentication
         'environment' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
         'header'      => 'X-Auth',
         'regex'       => '/(.*)/',
+        'index'       => 1,
         'cookie'      => 'X-Auth',
         'payload'     => null,
         'attribute'   => 'token',
@@ -58,6 +59,7 @@ abstract class Authentication
      * @param \Closure $next
      *
      * @return mixed
+     * @throws \Slim\Middleware\NotAuthenticatedException
      */
     public function __invoke(Request $request, Response $response, $next)
     {
@@ -66,15 +68,16 @@ abstract class Authentication
             return $this->unauthenticated($request, $response, $next);
         }
 
-        // Fetch to token from the request
+        // Fetch to token from the request and store in container
         $token = $this->fetchToken($request);
+        $this->ci[$this->options['attribute']] = $token;
 
         // Validate the token
         if (!$token || $this->validate($token) !== true) {
             return $this->unauthenticated($request, $response, $next);
         }
 
-        return $this->authenticated($request->withAttribute($this->options['attribute'], $token), $response, $next);
+        return $this->authenticated($request, $response, $next);
     }
 
     /**
@@ -84,8 +87,8 @@ abstract class Authentication
      * @param Response $response
      * @param callable $next
      *
-     * @throws NotAuthenticatedException
      * @return Response
+     * @throws \Slim\Middleware\NotAuthenticatedException
      */
     public function unauthenticated(Request $request, Response $response, callable $next)
     {
@@ -94,7 +97,7 @@ abstract class Authentication
         }
 
         // Bind anonymous functions to the container
-        $callable = $this->ci->get('notAuthenticatedHandler');
+        $callable = $this->ci['notAuthenticatedHandler'];
         if ($callable instanceof \Closure) {
             $callable = $callable->bindTo($this->ci);
         }
@@ -176,7 +179,7 @@ abstract class Authentication
 
         // Return the token
         if (!empty($token) && preg_match($this->options['regex'], $token, $matches)) {
-            return $matches[1];
+            return $matches[$this->options['index']];
         } else {
             return '';
         }

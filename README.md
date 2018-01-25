@@ -38,8 +38,10 @@ Default options for authentication are:
     'environment' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
     // string - the header to check for the token (set to false, null, or '' to skip)
     'header'      => 'X-Auth',
-    // string - the regex to match the token ($match[1] is used as the token)
+    // string - the regex to match the token ($match[$options['index']] is used as the token)
     'regex'       => '/(.*)/',
+    // integer - the regex index to use as the token
+    'index'       => 1,
     // string - the cookie to check for the token (set to false, null, or '' to skip)
     'cookie'      => 'X-Auth',
     // string - the identifier for the token in the payload
