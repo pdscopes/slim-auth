@@ -8,6 +8,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LogLevel;
+use Slim\Exception\HttpForbiddenException;
 
 abstract class Authorisation implements MiddlewareInterface
 {
@@ -33,7 +34,7 @@ abstract class Authorisation implements MiddlewareInterface
      * @param ServerRequestInterface  $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws NotAuthorisedException
+     * @throws HttpForbiddenException
      */
     public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -48,7 +49,7 @@ abstract class Authorisation implements MiddlewareInterface
      * @param ServerRequestInterface  $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws NotAuthorisedException
+     * @throws HttpForbiddenException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -67,12 +68,12 @@ abstract class Authorisation implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws NotAuthorisedException
+     * @throws HttpForbiddenException
      */
-    protected function unauthorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function unauthorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!$this->ci->has('notAuthorisedHandler')) {
-            throw new NotAuthorisedException('Not Authorised', 403);
+            throw new HttpForbiddenException($request);
         }
         return $this->ci->get('notAuthorisedHandler')($request, $handler);
     }
@@ -84,7 +85,7 @@ abstract class Authorisation implements MiddlewareInterface
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
      */
-    protected function authorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function authorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         return $handler->handle($request);
     }

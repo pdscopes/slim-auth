@@ -7,9 +7,9 @@ use MadeSimple\Slim\Middleware\Tests\TestContainer;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Exception\HttpUnauthorizedException;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\Authentication\JwtAuthentication;
-use Slim\Middleware\NotAuthenticatedException;
 use Slim\Psr7\Factory\ServerRequestFactory;
 
 class SlimJwtAuthenticationTest extends TestCase
@@ -20,7 +20,7 @@ class SlimJwtAuthenticationTest extends TestCase
     private $app;
 
     /**
-     * @var \Psr\Http\Message\ServerRequestInterface
+     * @var ServerRequestInterface
      */
     private $request;
 
@@ -41,7 +41,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtRequestInsecure()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->app->add(new JwtAuthentication($this->app->getContainer(), []));
         $this->app->handle($this->request);
@@ -49,7 +49,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenMissing()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
@@ -71,7 +71,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenHeaderInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withHeader('Authorization', 'Bearer ' . JWT::encode([], 'invalid'));
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
@@ -98,7 +98,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenServerParamInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
             'HTTP_AUTH' => JWT::encode([], 'invalid'),
@@ -144,7 +144,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenPayloadInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withParsedBody(['token' => JWT::encode([], 'invalid')]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
@@ -170,7 +170,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenCookieInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withCookieParams(['token' => JWT::encode([], 'invalid')]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [

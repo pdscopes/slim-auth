@@ -6,9 +6,9 @@ use MadeSimple\Slim\Middleware\Tests\TestContainer;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Slim\Exception\HttpUnauthorizedException;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\Authentication\SimpleTokenAuthentication;
-use Slim\Middleware\NotAuthenticatedException;
 use Slim\Psr7\Factory\ServerRequestFactory;
 
 class SlimSimpleTokenAuthenticationTest extends TestCase
@@ -19,7 +19,7 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
     private $app;
 
     /**
-     * @var \Psr\Http\Message\ServerRequestInterface
+     * @var ServerRequestInterface
      */
     private $request;
 
@@ -40,7 +40,7 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
 
     public function testSimpleRequestInsecure()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), []));
         $this->app->handle($this->request);
@@ -48,7 +48,7 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
 
     public function testSimpleFetchTokenMissing()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
             'secure' => false,
@@ -70,7 +70,7 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
 
     public function testSimpleFetchTokenHeaderInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withHeader('X-Auth', 'Bearer invalid');
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
@@ -97,7 +97,7 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
 
     public function testSimpleFetchTokenServerParamInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
             'HTTP_AUTH' => 'invalid',
@@ -143,7 +143,7 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
 
     public function testSimpleFetchTokenPayloadInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withParsedBody(['token' => 'invalid']);
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
@@ -169,7 +169,7 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
 
     public function testSimpleFetchTokenCookieInvalid()
     {
-        $this->expectException(NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withCookieParams(['token' => 'invalid']);
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [

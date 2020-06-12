@@ -34,10 +34,6 @@ class JwtAuthenticationTest extends TestCase
     {
         $auth = new JwtAuthentication($this->ci, []);
 
-        $reflection = new \ReflectionClass($auth);
-        $options    = $reflection->getProperty('options');
-        $options->setAccessible(true);
-
         $this->assertEquals([
             'secure'      => true,
             'relaxed'     => ['localhost', '127.0.0.1'],
@@ -51,7 +47,7 @@ class JwtAuthenticationTest extends TestCase
             'logger'      => null,
             'secret'      => '',
             'algorithm'   => ['HS256', 'HS512', 'HS384'],
-        ], $options->getValue($auth));
+        ], $auth->getOptions());
     }
 
     /**
@@ -80,11 +76,7 @@ class JwtAuthenticationTest extends TestCase
         ];
         $expected[$option] = $value;
 
-        $reflection = new \reflectionclass($auth);
-        $options    = $reflection->getproperty('options');
-        $options->setaccessible(true);
-
-        $this->assertEquals($expected, $options->getValue($auth));
+        $this->assertEquals($expected, $auth->getOptions());
     }
     public function constructWithOptionsProvider()
     {

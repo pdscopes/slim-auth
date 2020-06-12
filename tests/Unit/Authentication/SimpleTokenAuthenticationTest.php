@@ -4,12 +4,13 @@ namespace MadeSimple\Slim\Middleware\Tests\Unit\Authentication;
 
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Slim\Middleware\Authentication\SimpleTokenAuthentication;
 
 class SimpleTokenAuthenticationTest extends TestCase
 {
     /**
-     * @var \Psr\Container\ContainerInterface
+     * @var ContainerInterface
      */
     protected $ci;
 
@@ -30,10 +31,6 @@ class SimpleTokenAuthenticationTest extends TestCase
     {
         $auth = new SimpleTokenAuthentication($this->ci, []);
 
-        $reflection = new \ReflectionClass($auth);
-        $options    = $reflection->getProperty('options');
-        $options->setAccessible(true);
-
         $this->assertEquals([
             'secure'      => true,
             'relaxed'     => ['localhost', '127.0.0.1'],
@@ -46,7 +43,7 @@ class SimpleTokenAuthenticationTest extends TestCase
             'attribute'   => 'token',
             'logger'      => null,
             'validate'    => null,
-        ], $options->getValue($auth));
+        ], $auth->getOptions());
     }
 
     /**
@@ -74,11 +71,7 @@ class SimpleTokenAuthenticationTest extends TestCase
         ];
         $expected[$option] = $value;
 
-        $reflection = new \reflectionclass($auth);
-        $options    = $reflection->getproperty('options');
-        $options->setaccessible(true);
-
-        $this->assertEquals($expected, $options->getValue($auth));
+        $this->assertEquals($expected, $auth->getOptions());
     }
     public function constructWithOptionsProvider()
     {
@@ -129,7 +122,7 @@ class SimpleTokenAuthenticationTest extends TestCase
         $this->ci->set('api_key', 'token');
         $auth = new SimpleTokenAuthentication($this->ci, [
             'validate' => function ($token) {
-                /** @var \Psr\Container\ContainerInterface $this */
+                /** @var ContainerInterface $this */
                 return $token === $this->get('api_key');
             },
         ]);

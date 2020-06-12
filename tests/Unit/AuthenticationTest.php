@@ -3,10 +3,12 @@
 namespace MadeSimple\Slim\Middleware\Tests\Unit;
 
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Slim\Exception\HttpUnauthorizedException;
 use Slim\Middleware\Authentication;
 
 class AuthenticationTest extends TestCase
@@ -17,12 +19,12 @@ class AuthenticationTest extends TestCase
     protected $ci;
 
     /**
-     * @var \Psr\Http\Message\ServerRequestInterface|\PHPUnit\Framework\MockObject\MockObject
+     * @var ServerRequestInterface|MockObject
      */
     protected $mockRequest;
 
     /**
-     * @var \Psr\Http\Server\RequestHandlerInterface|\PHPUnit\Framework\MockObject\MockObject
+     * @var RequestHandlerInterface|MockObject
      */
     protected $mockHandler;
 
@@ -41,7 +43,7 @@ class AuthenticationTest extends TestCase
     /**
      * @param array $options
      * @param array $methods
-     * @return \Slim\Middleware\Authentication|\PHPUnit\Framework\MockObject\MockObject
+     * @return Authentication|MockObject
      */
     protected function stubAuthentication(array $options = [], array $methods = [])
     {
@@ -59,6 +61,8 @@ class AuthenticationTest extends TestCase
 
     /**
      * Test __invoke insecure request.
+     *
+     * @throws HttpUnauthorizedException
      */
     public function testInvokeInsecure()
     {
@@ -78,6 +82,8 @@ class AuthenticationTest extends TestCase
 
     /**
      * Test invoke secure request without a token.
+     *
+     * @throws HttpUnauthorizedException
      */
     public function testInvokeNoToken()
     {
@@ -109,6 +115,8 @@ class AuthenticationTest extends TestCase
 
     /**
      * Test invoke secure request with an invalid token.
+     *
+     * @throws HttpUnauthorizedException
      */
     public function testInvokeInvalidToken()
     {
@@ -145,6 +153,8 @@ class AuthenticationTest extends TestCase
 
     /**
      * Test invoke secure request with a valid token.
+     *
+     * @throws HttpUnauthorizedException
      */
     public function testInvokeValidToken()
     {
@@ -181,11 +191,11 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * Test NotAuthenticatedException is thrown if 'notAuthenticatedHandler' is not present.
+     * Test HttpUnauthorizedException is thrown if 'notAuthenticatedHandler' is not present.
      */
-    public function testUnauthenticatedThrowsNotAuthenticatedException()
+    public function testUnauthenticatedThrowsHttpUnauthorizedException()
     {
-        $this->expectException(\Slim\Middleware\NotAuthenticatedException::class);
+        $this->expectException(HttpUnauthorizedException::class);
 
         $authentication = $this->stubAuthentication();
         $authentication->unauthenticated($this->mockRequest, $this->mockHandler);
@@ -193,6 +203,8 @@ class AuthenticationTest extends TestCase
 
     /**
      * Test 'notAuthenticatedHandler is called when present.
+     *
+     * @throws HttpUnauthorizedException
      */
     public function testUnauthenticatedCallsNotAuthenticatedHandler()
     {
@@ -207,7 +219,7 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * Test authenticated passes request and response to the callable next.
+     * Test authenticated calls RequestHandlerInterface::handle with the ServerRequestInterface object.
      */
     public function testAuthenticated()
     {
@@ -390,5 +402,51 @@ class AuthenticationTest extends TestCase
         ]);
         $token = $authentication->fetchToken($this->mockRequest);
         $this->assertEquals('', $token);
+    }
+
+    /**
+     * Test retrieving middleware options.
+     */
+    public function testGetOptions()
+    {
+        $options = [
+            'secure'      => true,
+            'relaxed'     => ['localhost', '127.0.0.1'],
+            'environment' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
+            'header'      => 'X-Auth',
+            'regex'       => '/(.*)/',
+            'index'       => 1,
+            'cookie'      => 'X-Auth',
+            'payload'     => null,
+            'attribute'   => 'token',
+            'logger'      => null,
+        ];
+        $authentication = $this->stubAuthentication($options);
+
+        $this->assertEquals($options, $authentication->getOptions());
+    }
+
+    /**
+     * Test retrieving a single option.
+     */
+    public function testGetOption()
+    {
+        $options = [
+            'secure'      => true,
+            'relaxed'     => ['localhost', '127.0.0.1'],
+            'environment' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
+            'header'      => 'X-Auth',
+            'regex'       => '/(.*)/',
+            'index'       => 1,
+            'cookie'      => 'X-Auth',
+            'payload'     => null,
+            'attribute'   => 'token',
+            'logger'      => null,
+        ];
+        $authentication = $this->stubAuthentication($options);
+
+        foreach ($options as $opt => $value) {
+            $this->assertEquals($value, $authentication->getOption($opt));
+        }
     }
 }

@@ -8,6 +8,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LogLevel;
+use Slim\Exception\HttpUnauthorizedException;
 
 /**
  * Class Authentication
@@ -57,7 +58,7 @@ abstract class Authentication implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws NotAuthenticatedException
+     * @throws HttpUnauthorizedException
      */
     public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -72,7 +73,7 @@ abstract class Authentication implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws NotAuthenticatedException
+     * @throws HttpUnauthorizedException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -100,12 +101,12 @@ abstract class Authentication implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws NotAuthenticatedException
+     * @throws HttpUnauthorizedException
      */
     public function unauthenticated(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!$this->ci->has('notAuthenticatedHandler')) {
-            throw new NotAuthenticatedException('Not Authenticated', 401);
+            throw new HttpUnauthorizedException($request);
         }
 
         // Bind anonymous functions to the container
@@ -196,6 +197,28 @@ abstract class Authentication implements MiddlewareInterface
         } else {
             return '';
         }
+    }
+
+    /**
+     * Get a specific Authentication middleware option.
+     *
+     * @param string $opt
+     * @param mixed|null $default
+     * @return mixed|null
+     */
+    public function getOption(string $opt, $default = null)
+    {
+        return $this->options[$opt] ?? $default;
+    }
+
+    /**
+     * Get the Authentication middleware options.
+     *
+     * @return array
+     */
+    public function getOptions(): array
+    {
+        return $this->options;
     }
 
     /**
