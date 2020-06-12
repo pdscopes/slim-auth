@@ -12,6 +12,11 @@ A middleware to determine whether the request contains valid authentication toke
 
 To use an Authentication middleware to your Slim application simply:
 ```php
+use Slim\Middleware\Authentication\SimpleTokenAuthentication;
+/** @var \Slim\App $app The Slim application */
+/** @var string $pattern Pattern for either the group or a route */
+/** @var callable $callable A callable for a route */
+
 // Add to all routes:
 $app->add(new SimpleTokenAuthentication($app->getContainer(), $options));
 
@@ -24,7 +29,7 @@ $app->get($pattern, $callable)
     ->add(new SimpleTokenAuthentication($app->getContainer(), $options));
 ```
 
-*Side node*: It is recommended that if you are going to be adding same authentication to more than more groups/routes to put the middleware in `dependencies.php`.
+*Side node*: We recommend that if you are going to be adding same authentication to more than more groups/routes to put the middleware in `dependencies.php`.
 
 
 Default options for authentication are:
@@ -50,17 +55,40 @@ Default options for authentication are:
     'attribute'   => 'token',
     // object - an instance of a Psr\LoggerInterface
     'logger'      => null,
-]
+];
 ```
 
 
-When authentication fails the Slim container is checked for an `notAuthenticatedHandler`; if there is no such handler then an `NotAuthenticatedException` is thrown. An `notAuthenticatedHandler` should have the following signature:
+When authentication fails the middleware checks the container for an `notAuthenticatedHandler`; if there is no such handler then an `NotAuthenticatedException` is thrown. An `notAuthenticatedHandler` should have the following signature:
 
 ```php
-function (\Slim\Http\Request $request, \Slim\Http\Response $response) {
-    // return $response->withStatus(401);
-    // return $response->withRedirect('/path/to/sign-in/form');
-    // return $response->withJson(['message' => 'Not Authenticated'], 401);
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
+
+function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+    /** @var ResponseInterface $response Generated without the handler as we are blocked continued access */
+
+    // Example 1: Plain text unauthorized
+//    $response->getBody()->write('Unauthorized');
+//    return $response->withStatus(401)
+//        ->withHeader('Content-Type', 'text/plain');
+
+    // Example 2: JSON encoded unauthorized
+//    $response->getBody()->write('{"message":"Unauthorized"}');
+//    $response = $response->withStatus(401)
+//        ->withHeader('Content-Type', 'application/json');
+
+    // Example 2: Redirect to a sign in form
+//    $response = $response->withStatus(302)
+//        ->withHeader('Location', '/path/to/sign-in/form');
+
+    // Example 3: Redirect to a sign in form with the request
+//    $response = $response->withStatus(302)
+//        ->withHeader('Location', '/path/to/sign-in/form?referrer=' . urlencode($request->getRequestTarget()));
+
+    return $response;
 }
 ```
 
@@ -70,13 +98,14 @@ Simple token authentication is an implementation of Authentication which allows 
 [
     // callable - function to validate the token [required]
     'validate' => null,
-]
+];
 ```
 
 The callable should have the following signature:
 ```php
-function ($token) {
-    // return bool
+function ($token): bool {
+    /** @var bool $isValid Populated by this function, true if the token is valid */
+    return $isValid;
 }
 ```
 
@@ -99,6 +128,6 @@ JWT authentication is an implementation of Authentication which allows the user 
 ## Authorisation
 A middleware to determine whether an authenticated request has authorisation to access the requested route.
 
-When Authorisation fails the container is checked for an `'notAuthorisedHandler'`; if there is no such handler then an `NotAuthorisedException` exception is thrown.
+When Authorisation fails the middleware checks the container for an `'notAuthorisedHandler'`; the middleware throws an `NotAuthorisedException` exception if there is no such handler.
 
 _Note_: If you need to access the route from within your app middleware you must set '`determineRouteBeforeAppMiddleware`' to `true` in your configuration otherwise `getAttribute('route')` will return `null`. The route is always available in route middleware.

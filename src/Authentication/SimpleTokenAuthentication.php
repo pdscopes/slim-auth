@@ -10,8 +10,8 @@ class SimpleTokenAuthentication extends Authentication
     /**
      * SimpleTokenAuthentication constructor.
      *
-     * @param \Psr\Container\ContainerInterface $ci
-     * @param array                             $options
+     * @param ContainerInterface $ci
+     * @param array $options
      */
     public function __construct(ContainerInterface $ci, array $options)
     {
@@ -20,10 +20,7 @@ class SimpleTokenAuthentication extends Authentication
         ]);
     }
 
-    /**
-     * @InheritDoc
-     */
-    public function validate($token)
+    public function validate($token): bool
     {
         if (!is_callable($this->options['validate'])) {
             return false;

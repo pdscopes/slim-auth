@@ -3,12 +3,13 @@
 namespace Slim\Middleware;
 
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LogLevel;
-use Slim\Http\Request;
-use Slim\Http\Response;
 
-abstract class Authorisation
+abstract class Authorisation implements MiddlewareInterface
 {
     /**
      * @var ContainerInterface
@@ -26,58 +27,66 @@ abstract class Authorisation
     }
 
     /**
+     * Process the request by calling `self::process`.
+     *
+     * @see Authorisation::process()
+     * @param ServerRequestInterface  $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws NotAuthorisedException
+     */
+    public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    {
+        return $this->process($request, $handler);
+    }
+
+    /**
      * Controls access to the current route based on the authorisation rules of the current route.
      * Blocks the request if the authorisation rules are meet, otherwise
      * allows the request forward through this middleware.
      *
-     * @param Request  $request
-     * @param Response $response
-     * @param \Closure $next
-     *
-     * @return mixed
-     * @throws \Slim\Middleware\NotAuthorisedException
+     * @param ServerRequestInterface  $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws NotAuthorisedException
      */
-    public function __invoke(Request $request, Response $response, $next)
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         // Determine authorisation
         if (!$this->hasAuthorisation($request)) {
             $this->log(LogLevel::DEBUG, 'Request does not have authorisation');
-            return $this->unauthorised($request, $response, $next);
+            return $this->unauthorised($request, $handler);
         }
 
-        return $this->authorised($request, $response, $next);
+        return $this->authorised($request, $handler);
     }
 
     /**
      * Defines the behaviour of the authorisation middleware when the request is unauthorised.
      *
-     * @param Request  $request
-     * @param Response $response
-     * @param callable $next
-     *
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
      * @throws NotAuthorisedException
-     * @return Response
      */
-    protected function unauthorised(Request $request, Response $response, callable $next)
+    protected function unauthorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!$this->ci->has('notAuthorisedHandler')) {
             throw new NotAuthorisedException('Not Authorised', 403);
         }
-        return $this->ci['notAuthorisedHandler']($request, $response);
+        return $this->ci->get('notAuthorisedHandler')($request, $handler);
     }
 
     /**
      * Defines the behaviour of the authorisation middleware when the request is authorised.
      *
-     * @param Request  $request
-     * @param Response $response
-     * @param callable $next
-     *
-     * @return mixed
+     * @param ServerRequestInterface  $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
      */
-    protected function authorised(Request $request, Response $response, callable $next)
+    protected function authorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        return $next($request, $response);
+        return $handler->handle($request);
     }
 
     /**
@@ -86,10 +95,10 @@ abstract class Authorisation
      * @param string $message
      * @param array  $context
      */
-    protected function log($level, $message, array $context = [])
+    protected function log($level, $message, array $context = []): void
     {
-        if ($this->ci['logger'] && $this->ci['logger'] instanceof LoggerInterface) {
-            $this->ci['logger']->log($level, $message, $context);
+        if ($this->ci->has('logger')) {
+            $this->ci->get('logger')->log($level, $message, $context);
         }
     }
 
@@ -97,8 +106,8 @@ abstract class Authorisation
      * Determine whether the authenticated request has permissions to access this
      * request with the specified rules.
      *
-     * @param Request $request
+     * @param ServerRequestInterface $request
      * @return bool
      */
-    protected abstract function hasAuthorisation(Request $request);
+    protected abstract function hasAuthorisation(ServerRequestInterface $request): bool;
 }

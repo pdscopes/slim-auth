@@ -2,6 +2,7 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Unit\Authentication;
 
+use MadeSimple\Slim\Middleware\Tests\TestContainer;
 use PHPUnit\Framework\TestCase;
 use Slim\Middleware\Authentication\SimpleTokenAuthentication;
 
@@ -15,11 +16,11 @@ class SimpleTokenAuthenticationTest extends TestCase
     /**
      * @InheritDoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
-        $this->ci = new \Slim\Container();
+        $this->ci = new TestContainer();
     }
 
     /**
@@ -125,10 +126,11 @@ class SimpleTokenAuthenticationTest extends TestCase
      */
     public function testValidateWithCallableBindsContainer()
     {
-        $this->ci['api_key'] = 'token';
+        $this->ci->set('api_key', 'token');
         $auth = new SimpleTokenAuthentication($this->ci, [
             'validate' => function ($token) {
-                return $token === $this['api_key'];
+                /** @var \Psr\Container\ContainerInterface $this */
+                return $token === $this->get('api_key');
             },
         ]);
 

@@ -3,25 +3,28 @@
 namespace MadeSimple\Slim\Middleware\Tests\Unit\Authentication;
 
 use Firebase\JWT\JWT;
+use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Slim\Http\Request;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Slim\Middleware\Authentication\JwtAuthentication;
 
 class JwtAuthenticationTest extends TestCase
 {
     /**
-     * @var \Psr\Container\ContainerInterface
+     * @var ContainerInterface
      */
     protected $ci;
 
     /**
      * @InheritDoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
-        $this->ci = new \Slim\Container();
+        $this->ci = new TestContainer();
     }
 
     /**
@@ -108,7 +111,8 @@ class JwtAuthenticationTest extends TestCase
         $token = '123';
         $auth    = new JwtAuthentication($this->ci, []);
 
-        $mockRequest = $this->getMockBuilder(Request::class)->disableOriginalConstructor()->getMock();
+        /** @var ServerRequestInterface|MockObject $mockRequest */
+        $mockRequest = $this->getMockBuilder(ServerRequestInterface::class)->disableOriginalConstructor()->getMock();
         $mockRequest
             ->expects($this->once())->method('getHeader')->with('Authorization')->willReturn(['Bearer ' . $token]);
 

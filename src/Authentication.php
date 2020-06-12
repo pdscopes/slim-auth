@@ -3,10 +3,11 @@
 namespace Slim\Middleware;
 
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LogLevel;
-use Slim\Http\Request;
-use Slim\Http\Response;
 
 /**
  * Class Authentication
@@ -14,7 +15,7 @@ use Slim\Http\Response;
  * @package MadeSimple\Slim\Middleware
  * @author
  */
-abstract class Authentication
+abstract class Authentication implements MiddlewareInterface
 {
     /**
      * @var ContainerInterface
@@ -41,7 +42,7 @@ abstract class Authentication
      * Middleware constructor.
      *
      * @param ContainerInterface $ci
-     * @param array              $options
+     * @param array $options
      */
     public function __construct(ContainerInterface $ci, array $options)
     {
@@ -50,86 +51,94 @@ abstract class Authentication
     }
 
     /**
+     * Process the request by calling `self::process`.
+     *
+     * @see Authentication::process()
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws NotAuthenticatedException
+     */
+    public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    {
+        return $this->process($request, $handler);
+    }
+
+    /**
      * Controls access to the current route based on the authentication sent with the request.
      * Blocks the request if the authentication token is not valid, otherwise
      * allows the request forward through this middleware.
      *
-     * @param Request  $request
-     * @param Response $response
-     * @param \Closure $next
-     *
-     * @return mixed
-     * @throws \Slim\Middleware\NotAuthenticatedException
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws NotAuthenticatedException
      */
-    public function __invoke(Request $request, Response $response, $next)
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         // Check security
         if (!$this->isSecure($request)) {
-            return $this->unauthenticated($request, $response, $next);
+            return $this->unauthenticated($request, $handler);
         }
 
         // Fetch to token from the request and store in container
         $token = $this->fetchToken($request);
-        $this->ci[$this->options['attribute']] = $token;
+        $this->ci->set($this->options['attribute'], $token);
+        $request = $request->withAttribute($this->options['attribute'], $token);
 
         // Validate the token
         if (!$token || $this->validate($token) !== true) {
-            return $this->unauthenticated($request, $response, $next);
+            return $this->unauthenticated($request, $handler);
         }
 
-        return $this->authenticated($request, $response, $next);
+        return $this->authenticated($request, $handler);
     }
 
     /**
      * Defines the behaviour of the authentication middleware when the request is unauthenticated.
      *
-     * @param Request  $request
-     * @param Response $response
-     * @param callable $next
-     *
-     * @return Response
-     * @throws \Slim\Middleware\NotAuthenticatedException
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws NotAuthenticatedException
      */
-    public function unauthenticated(Request $request, Response $response, callable $next)
+    public function unauthenticated(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!$this->ci->has('notAuthenticatedHandler')) {
             throw new NotAuthenticatedException('Not Authenticated', 401);
         }
 
         // Bind anonymous functions to the container
-        $callable = $this->ci['notAuthenticatedHandler'];
+        $callable = $this->ci->get('notAuthenticatedHandler');
         if ($callable instanceof \Closure) {
             $callable = $callable->bindTo($this->ci);
         }
 
-        return $callable($request, $response);
+        return $callable($request, $handler);
     }
 
     /**
      * Defines the behaviour of the authentication middleware when the request is authenticated.
      *
-     * @param Request  $request
-     * @param Response $response
-     * @param callable $next
-     *
-     * @return mixed
+     * @param ServerRequestInterface  $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
      */
-    public function authenticated(Request $request, Response $response, callable $next)
+    public function authenticated(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $this->log(LogLevel::DEBUG, 'Request Authenticated', [
             'token' => $request->getAttribute($this->options['attribute'])
         ]);
-        return $next($request, $response);
+        return $handler->handle($request);
     }
 
     /**
      * Determine whether the request is secure.
      *
-     * @param Request $request
-     *
+     * @param ServerRequestInterface $request
      * @return bool
      */
-    public function isSecure(Request $request)
+    public function isSecure(ServerRequestInterface $request): bool
     {
         // No need if not set to be secure
         if ($this->options['secure'] === false) {
@@ -146,17 +155,16 @@ abstract class Authentication
     /**
      * Extract the authentication token from the request.
      *
-     * @param Request $request
-     *
+     * @param ServerRequestInterface $request
      * @return mixed
      */
-    public function fetchToken(Request $request)
+    public function fetchToken(ServerRequestInterface $request)
     {
         $token = '';
 
         // If using PHP in CGI mode and non-standard environment
         foreach ((array) $this->options['environment'] as $environment) {
-            if (($token = $request->getServerParam($environment, '')) !== '') {
+            if (($token = $request->getServerParams()[$environment] ?? '') !== '') {
                 break;
             }
         }
@@ -169,12 +177,17 @@ abstract class Authentication
 
         // Fall back on the payload
         if (empty($token) && !empty($this->options['payload'])) {
-            $token = $request->getParsedBodyParam($this->options['payload'], '');
+            $postParams = $request->getParsedBody();
+            if (is_array($postParams)) {
+                $token = $postParams[$this->options['payload']] ?? '';
+            } elseif (is_object($postParams)) {
+                $token = $postParams->{$this->options['payload']} ?? '';
+            }
         }
 
         // Finally fall back on cookie
         if (empty($token) && !empty($this->options['cookie'])) {
-            $token = $request->getCookieParam($this->options['cookie'], '');
+            $token = $request->getCookieParams()[$this->options['cookie']] ?? '';
         }
 
         // Return the token
@@ -191,10 +204,10 @@ abstract class Authentication
      * @param string $message
      * @param array  $context
      */
-    protected function log($level, $message, array $context = [])
+    protected function log($level, $message, array $context = []): void
     {
-        if ($this->options['logger'] && $this->options['logger'] instanceof LoggerInterface) {
-            $this->options['logger']->log($level, $message, $context);
+        if ($this->ci->has('logger')) {
+            $this->ci->get('logger')->log($level, $message, $context);
         }
     }
 
@@ -205,8 +218,7 @@ abstract class Authentication
      * entity requesting authentication in the container, e.g. a User object.
      *
      * @param mixed $token
-     *
      * @return bool True if the token is valid, false otherwise
      */
-    public abstract function validate($token);
+    public abstract function validate($token): bool;
 }

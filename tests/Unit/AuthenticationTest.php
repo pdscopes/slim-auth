@@ -2,51 +2,46 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Unit;
 
+use MadeSimple\Slim\Middleware\Tests\TestContainer;
 use PHPUnit\Framework\TestCase;
-use Slim\Http\Request;
-use Slim\Http\Response;
-use Slim\Http\Uri;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UriInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Middleware\Authentication;
 
 class AuthenticationTest extends TestCase
 {
     /**
-     * @var \Psr\Container\ContainerInterface
+     * @var TestContainer
      */
     protected $ci;
 
     /**
-     * @var \Slim\Http\Request|\PHPUnit_Framework_MockObject_MockObject
+     * @var \Psr\Http\Message\ServerRequestInterface|\PHPUnit\Framework\MockObject\MockObject
      */
     protected $mockRequest;
 
     /**
-     * @var \Slim\Http\Response|\PHPUnit_Framework_MockObject_MockObject
+     * @var \Psr\Http\Server\RequestHandlerInterface|\PHPUnit\Framework\MockObject\MockObject
      */
-    protected $mockResponse;
-
-    /**
-     * @var callable
-     */
-    protected $mockNext;
+    protected $mockHandler;
 
     /**
      * @InheritDoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
-        $this->ci = new \Slim\Container();
-        $this->mockRequest  = $this->getMockBuilder(Request::class)->disableOriginalConstructor()->getMock();
-        $this->mockResponse = $this->getMockBuilder(Response::class)->disableOriginalConstructor()->getMock();
-        $this->mockNext     = function () {};
+        $this->ci = new TestContainer();
+        $this->mockRequest = $this->createMock(ServerRequestInterface::class);
+        $this->mockHandler = $this->createMock(RequestHandlerInterface::class);
     }
 
     /**
      * @param array $options
      * @param array $methods
-     * @return \Slim\Middleware\Authentication|\PHPUnit_Framework_MockObject_MockObject
+     * @return \Slim\Middleware\Authentication|\PHPUnit\Framework\MockObject\MockObject
      */
     protected function stubAuthentication(array $options = [], array $methods = [])
     {
@@ -76,9 +71,9 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest, $this->mockResponse, $this->mockNext);
+            ->with($this->mockRequest, $this->mockHandler);
 
-        $authentication->__invoke($this->mockRequest, $this->mockResponse, $this->mockNext);
+        $authentication->__invoke($this->mockRequest, $this->mockHandler);
     }
 
     /**
@@ -86,7 +81,9 @@ class AuthenticationTest extends TestCase
      */
     public function testInvokeNoToken()
     {
-        $authentication = $this->stubAuthentication([], ['isSecure', 'fetchToken', 'unauthenticated']);
+        $authentication = $this->stubAuthentication([
+            'attribute' => 'ATTRIBUTE'
+        ], ['isSecure', 'fetchToken', 'unauthenticated']);
         $authentication
             ->expects($this->once())
             ->method('isSecure')
@@ -100,9 +97,14 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest, $this->mockResponse, $this->mockNext);
+            ->with($this->mockRequest, $this->mockHandler);
+        $this->mockRequest
+            ->expects($this->once())
+            ->method('withAttribute')
+            ->with('ATTRIBUTE', '')
+            ->willReturnSelf();
 
-        $authentication->__invoke($this->mockRequest, $this->mockResponse, $this->mockNext);
+        $authentication->__invoke($this->mockRequest, $this->mockHandler);
     }
 
     /**
@@ -110,7 +112,9 @@ class AuthenticationTest extends TestCase
      */
     public function testInvokeInvalidToken()
     {
-        $authentication = $this->stubAuthentication([], ['isSecure', 'fetchToken', 'unauthenticated']);
+        $authentication = $this->stubAuthentication([
+            'attribute' => 'ATTRIBUTE'
+        ], ['isSecure', 'fetchToken', 'unauthenticated']);
         $authentication
             ->expects($this->once())
             ->method('isSecure')
@@ -129,9 +133,14 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest, $this->mockResponse, $this->mockNext);
+            ->with($this->mockRequest, $this->mockHandler);
+        $this->mockRequest
+            ->expects($this->once())
+            ->method('withAttribute')
+            ->with('ATTRIBUTE', 'token')
+            ->willReturnSelf();
 
-        $authentication->__invoke($this->mockRequest, $this->mockResponse, $this->mockNext);
+        $authentication->__invoke($this->mockRequest, $this->mockHandler);
     }
 
     /**
@@ -160,20 +169,26 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('authenticated')
-            ->with($this->mockRequest, $this->mockResponse, $this->mockNext);
+            ->with($this->mockRequest, $this->mockHandler);
+        $this->mockRequest
+            ->expects($this->once())
+            ->method('withAttribute')
+            ->with('ATTRIBUTE', 'token')
+            ->willReturnSelf();
 
 
-        $authentication->__invoke($this->mockRequest, $this->mockResponse, $this->mockNext);
+        $authentication->__invoke($this->mockRequest, $this->mockHandler);
     }
 
     /**
      * Test NotAuthenticatedException is thrown if 'notAuthenticatedHandler' is not present.
-     * @expectedException \Slim\Middleware\NotAuthenticatedException
      */
     public function testUnauthenticatedThrowsNotAuthenticatedException()
     {
+        $this->expectException(\Slim\Middleware\NotAuthenticatedException::class);
+
         $authentication = $this->stubAuthentication();
-        $authentication->unauthenticated($this->mockRequest, $this->mockResponse, $this->mockNext);
+        $authentication->unauthenticated($this->mockRequest, $this->mockHandler);
     }
 
     /**
@@ -181,15 +196,14 @@ class AuthenticationTest extends TestCase
      */
     public function testUnauthenticatedCallsNotAuthenticatedHandler()
     {
-        $this->mockRequest->expects($this->once())->method('getMethod');
-        $this->mockResponse->expects($this->once())->method('getStatusCode');
+        $this->mockHandler->expects($this->once())->method('handle')->with($this->mockRequest);
 
-        $this->ci['notAuthenticatedHandler'] = function () {
-            return function($request, $response) { $request->getMethod(); $response->getStatusCode(); };
-        };
+        $this->ci->set('notAuthenticatedHandler', function ($request, $handler) {
+            return $handler->handle($request);
+        });
 
         $authentication = $this->stubAuthentication();
-        $authentication->unauthenticated($this->mockRequest, $this->mockResponse, $this->mockNext);
+        $authentication->unauthenticated($this->mockRequest, $this->mockHandler);
     }
 
     /**
@@ -197,12 +211,10 @@ class AuthenticationTest extends TestCase
      */
     public function testAuthenticated()
     {
-        $this->mockRequest->expects($this->once())->method('getMethod');
-        $this->mockResponse->expects($this->once())->method('getStatusCode');
-        $next = function($request, $response) { $request->getMethod(); $response->getStatusCode(); };
+        $this->mockHandler->expects($this->once())->method('handle')->with($this->mockRequest);
 
         $authentication = $this->stubAuthentication();
-        $authentication->authenticated($this->mockRequest, $this->mockResponse, $next);
+        $authentication->authenticated($this->mockRequest, $this->mockHandler);
     }
 
     /**
@@ -221,7 +233,7 @@ class AuthenticationTest extends TestCase
      */
     public function testIsSecureObeysRelaxedOption()
     {
-        $mockUri = $this->createMock(Uri::class);
+        $mockUri = $this->createMock(UriInterface::class);
         $this->mockRequest->expects($this->once())->method('getUri')->willReturn($mockUri);
         $mockUri->expects($this->once())->method('getHost')->willReturn('relaxed.domain');
 
@@ -239,7 +251,7 @@ class AuthenticationTest extends TestCase
      */
     public function testIsSecureChecksUriScheme($scheme, $secure)
     {
-        $mockUri = $this->createMock(Uri::class);
+        $mockUri = $this->createMock(UriInterface::class);
         $this->mockRequest->expects($this->exactly(2))->method('getUri')->willReturn($mockUri);
         $mockUri->expects($this->once())->method('getHost')->willReturn('production.domain');
         $mockUri->expects($this->once())->method('getScheme')->willReturn($scheme);
@@ -264,9 +276,8 @@ class AuthenticationTest extends TestCase
     {
         $this->mockRequest
             ->expects($this->once())
-            ->method('getServerParam')
-            ->with('ENVIRONMENT_VARIABLE')
-            ->willReturn('token');
+            ->method('getServerParams')
+            ->willReturn(['ENVIRONMENT_VARIABLE' => 'token']);
 
         $authentication = $this->stubAuthentication([
             'environment' => ['ENVIRONMENT_VARIABLE']
@@ -282,9 +293,8 @@ class AuthenticationTest extends TestCase
     {
         $this->mockRequest
             ->expects($this->once())
-            ->method('getServerParam')
-            ->with('ENVIRONMENT_VARIABLE')
-            ->willReturn('');
+            ->method('getServerParams')
+            ->willReturn([]);
         $this->mockRequest
             ->expects($this->once())
             ->method('getHeader')
@@ -306,9 +316,8 @@ class AuthenticationTest extends TestCase
     {
         $this->mockRequest
             ->expects($this->once())
-            ->method('getServerParam')
-            ->with('ENVIRONMENT_VARIABLE')
-            ->willReturn('');
+            ->method('getServerParams')
+            ->willReturn([]);
         $this->mockRequest
             ->expects($this->once())
             ->method('getHeader')
@@ -316,8 +325,8 @@ class AuthenticationTest extends TestCase
             ->willReturn([]);
         $this->mockRequest
             ->expects($this->once())
-            ->method('getCookieParam')
-            ->willReturn('token');
+            ->method('getCookieParams')
+            ->willReturn(['COOKIE_NAME' => 'token']);
 
         $authentication = $this->stubAuthentication([
             'environment' => ['ENVIRONMENT_VARIABLE'],
@@ -335,9 +344,8 @@ class AuthenticationTest extends TestCase
     {
         $this->mockRequest
             ->expects($this->once())
-            ->method('getServerParam')
-            ->with('ENVIRONMENT_VARIABLE')
-            ->willReturn('');
+            ->method('getServerParams')
+            ->willReturn([]);
         $this->mockRequest
             ->expects($this->once())
             ->method('getHeader')
@@ -345,8 +353,8 @@ class AuthenticationTest extends TestCase
             ->willReturn([]);
         $this->mockRequest
             ->expects($this->once())
-            ->method('getCookieParam')
-            ->willReturn('');
+            ->method('getCookieParams')
+            ->willReturn([]);
 
         $authentication = $this->stubAuthentication([
             'environment' => ['ENVIRONMENT_VARIABLE'],
@@ -364,9 +372,8 @@ class AuthenticationTest extends TestCase
     {
         $this->mockRequest
             ->expects($this->once())
-            ->method('getServerParam')
-            ->with('ENVIRONMENT_VARIABLE')
-            ->willReturn('');
+            ->method('getServerParams')
+            ->willReturn([]);
         $this->mockRequest
             ->expects($this->once())
             ->method('getHeader')
@@ -374,7 +381,7 @@ class AuthenticationTest extends TestCase
             ->willReturn([]);
         $this->mockRequest
             ->expects($this->never())
-            ->method('getCookieParam');
+            ->method('getCookieParams');
 
         $authentication = $this->stubAuthentication([
             'environment' => ['ENVIRONMENT_VARIABLE'],
