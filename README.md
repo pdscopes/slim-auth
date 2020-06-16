@@ -1,7 +1,7 @@
 # madesimple/slim-auth
 [![Build Status](https://travis-ci.org/pdscopes/slim-auth.svg?branch=master)](https://travis-ci.org/pdscopes/slim-auth)
 
-An authentication and authorisation middleware for [Slim 3 framework](https://www.slimframework.com/).
+An authentication and authorisation middleware for [Slim 4 framework](https://www.slimframework.com/).
 
 ## Authentication
 A middleware to determine whether the request contains valid authentication token. The middleware has been designed so that it can easily be extended to:
@@ -65,7 +65,6 @@ When authentication fails the middleware checks the container for an `notAuthent
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 
 function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
     /** @var ResponseInterface $response Generated without the handler as we are blocked continued access */
@@ -128,6 +127,6 @@ JWT authentication is an implementation of Authentication which allows the user 
 ## Authorisation
 A middleware to determine whether an authenticated request has authorisation to access the requested route.
 
-When Authorisation fails the middleware checks the container for an `'notAuthorisedHandler'`; the middleware throws an `NotAuthorisedException` exception if there is no such handler.
+When Authorisation fails the middleware throws an `HttpUnauthorizedException` exception.
 
 _Note_: If you need to access the route from within your app middleware you must set '`determineRouteBeforeAppMiddleware`' to `true` in your configuration otherwise `getAttribute('route')` will return `null`. The route is always available in route middleware.

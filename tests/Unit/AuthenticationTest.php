@@ -75,7 +75,7 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest, $this->mockHandler);
+            ->with($this->mockRequest);
 
         $authentication->__invoke($this->mockRequest, $this->mockHandler);
     }
@@ -103,7 +103,7 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest, $this->mockHandler);
+            ->with($this->mockRequest);
         $this->mockRequest
             ->expects($this->once())
             ->method('withAttribute')
@@ -141,7 +141,7 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest, $this->mockHandler);
+            ->with($this->mockRequest);
         $this->mockRequest
             ->expects($this->once())
             ->method('withAttribute')
@@ -191,31 +191,14 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * Test HttpUnauthorizedException is thrown if 'notAuthenticatedHandler' is not present.
+     * Test HttpUnauthorizedException is thrown.
      */
     public function testUnauthenticatedThrowsHttpUnauthorizedException()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
         $authentication = $this->stubAuthentication();
-        $authentication->unauthenticated($this->mockRequest, $this->mockHandler);
-    }
-
-    /**
-     * Test 'notAuthenticatedHandler is called when present.
-     *
-     * @throws HttpUnauthorizedException
-     */
-    public function testUnauthenticatedCallsNotAuthenticatedHandler()
-    {
-        $this->mockHandler->expects($this->once())->method('handle')->with($this->mockRequest);
-
-        $this->ci->set('notAuthenticatedHandler', function ($request, $handler) {
-            return $handler->handle($request);
-        });
-
-        $authentication = $this->stubAuthentication();
-        $authentication->unauthenticated($this->mockRequest, $this->mockHandler);
+        $authentication->unauthenticated($this->mockRequest);
     }
 
     /**

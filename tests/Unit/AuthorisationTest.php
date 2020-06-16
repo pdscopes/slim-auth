@@ -58,32 +58,15 @@ class AuthorisationTest extends TestCase
     }
 
     /**
-     * Test HttpForbiddenException is thrown if 'notAuthorisedHandler' is not present.
+     * Test HttpForbiddenException is thrown.
      */
     public function testUnauthorisedThrowsHttpForbiddenException()
     {
         $this->expectException(HttpForbiddenException::class);
 
         $authorisation = $this->stubAuthorisation(false);
-        $authorisation->unauthorised($this->mockRequest, $this->mockHandler);
+        $authorisation->unauthorised($this->mockRequest);
 
-    }
-
-    /**
-     * Test 'notAuthorisedHandler is called when present.
-     *
-     * @throws HttpForbiddenException
-     */
-    public function testUnauthorisedCallsNotAuthorisedHandler()
-    {
-        $this->mockHandler->expects($this->once())->method('handle')->with($this->mockRequest);
-
-        $this->ci->set('notAuthorisedHandler', function ($request, $handler) {
-            return $handler->handle($request);
-        });
-
-        $authorisation = $this->stubAuthorisation(false);
-        $authorisation->unauthorised($this->mockRequest, $this->mockHandler);
     }
 
     /**

@@ -79,7 +79,7 @@ abstract class Authentication implements MiddlewareInterface
     {
         // Check security
         if (!$this->isSecure($request)) {
-            return $this->unauthenticated($request, $handler);
+            return $this->unauthenticated($request);
         }
 
         // Fetch to token from the request and store in container
@@ -89,7 +89,7 @@ abstract class Authentication implements MiddlewareInterface
 
         // Validate the token
         if (!$token || $this->validate($token) !== true) {
-            return $this->unauthenticated($request, $handler);
+            return $this->unauthenticated($request);
         }
 
         return $this->authenticated($request, $handler);
@@ -99,23 +99,12 @@ abstract class Authentication implements MiddlewareInterface
      * Defines the behaviour of the authentication middleware when the request is unauthenticated.
      *
      * @param ServerRequestInterface $request
-     * @param RequestHandlerInterface $handler
      * @return ResponseInterface
      * @throws HttpUnauthorizedException
      */
-    public function unauthenticated(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function unauthenticated(ServerRequestInterface $request): ResponseInterface
     {
-        if (!$this->ci->has('notAuthenticatedHandler')) {
-            throw new HttpUnauthorizedException($request);
-        }
-
-        // Bind anonymous functions to the container
-        $callable = $this->ci->get('notAuthenticatedHandler');
-        if ($callable instanceof \Closure) {
-            $callable = $callable->bindTo($this->ci);
-        }
-
-        return $callable($request, $handler);
+        throw new HttpUnauthorizedException($request);
     }
 
     /**

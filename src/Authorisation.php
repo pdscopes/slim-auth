@@ -56,7 +56,7 @@ abstract class Authorisation implements MiddlewareInterface
         // Determine authorisation
         if (!$this->hasAuthorisation($request)) {
             $this->log(LogLevel::DEBUG, 'Request does not have authorisation');
-            return $this->unauthorised($request, $handler);
+            return $this->unauthorised($request);
         }
 
         return $this->authorised($request, $handler);
@@ -66,16 +66,12 @@ abstract class Authorisation implements MiddlewareInterface
      * Defines the behaviour of the authorisation middleware when the request is unauthorised.
      *
      * @param ServerRequestInterface $request
-     * @param RequestHandlerInterface $handler
      * @return ResponseInterface
      * @throws HttpForbiddenException
      */
-    public function unauthorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function unauthorised(ServerRequestInterface $request): ResponseInterface
     {
-        if (!$this->ci->has('notAuthorisedHandler')) {
-            throw new HttpForbiddenException($request);
-        }
-        return $this->ci->get('notAuthorisedHandler')($request, $handler);
+        throw new HttpForbiddenException($request);
     }
 
     /**
