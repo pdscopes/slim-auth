@@ -34,7 +34,8 @@ class SlimJwtAuthenticationTest extends TestCase
         // Set up the application
         $this->app = AppFactory::create(null, new TestContainer());
         $this->app->get('/', function (ServerRequestInterface $request, ResponseInterface $response) {
-            $response->getBody()->write('success');
+            $request->getAttribute('token');
+            $response->getBody()->write($request->getAttribute('token')->uuid);
             return $response->withStatus(200);
         });
     }
@@ -59,7 +60,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenHeaderValid()
     {
-        $this->request = $this->request->withHeader('Authorization', 'Bearer ' . JWT::encode([], 'secret'));
+        $this->request = $this->request->withHeader('Authorization', 'Bearer ' . JWT::encode(['uuid' => '123'], 'secret'));
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => 'secret',
@@ -67,13 +68,14 @@ class SlimJwtAuthenticationTest extends TestCase
         $response = $this->app->handle($this->request);
 
         $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('123', (string) $response->getBody());
     }
 
     public function testJwtFetchTokenHeaderInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->request = $this->request->withHeader('Authorization', 'Bearer ' . JWT::encode([], 'invalid'));
+        $this->request = $this->request->withHeader('Authorization', 'Bearer ' . JWT::encode(['uuid' => '123'], 'invalid'));
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => 'secret',
@@ -84,7 +86,7 @@ class SlimJwtAuthenticationTest extends TestCase
     public function testJwtFetchTokenServerParamValid()
     {
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
-            'HTTP_AUTH' => JWT::encode([], 'secret'),
+            'HTTP_AUTH' => JWT::encode(['uuid' => '123'], 'secret'),
         ]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure'      => false,
@@ -94,6 +96,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $response = $this->app->handle($this->request);
 
         $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('123', (string) $response->getBody());
     }
 
     public function testJwtFetchTokenServerParamInvalid()
@@ -101,7 +104,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
-            'HTTP_AUTH' => JWT::encode([], 'invalid'),
+            'HTTP_AUTH' => JWT::encode(['uuid' => '123'], 'invalid'),
         ]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure'      => false,
@@ -113,7 +116,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenPayloadArrayValid()
     {
-        $payload = ['token' => JWT::encode([], 'secret')];
+        $payload = ['token' => JWT::encode(['uuid' => '123'], 'secret')];
         $this->request = $this->request->withParsedBody($payload);
 
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
@@ -124,12 +127,13 @@ class SlimJwtAuthenticationTest extends TestCase
         $response = $this->app->handle($this->request);
 
         $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('123', (string) $response->getBody());
     }
 
     public function testJwtFetchTokenPayloadObjectValid()
     {
         $payload = new \stdClass();
-        $payload->token = JWT::encode([], 'secret');
+        $payload->token = JWT::encode(['uuid' => '123'], 'secret');
         $this->request = $this->request->withParsedBody($payload);
 
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
@@ -140,13 +144,14 @@ class SlimJwtAuthenticationTest extends TestCase
         $response = $this->app->handle($this->request);
 
         $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('123', (string) $response->getBody());
     }
 
     public function testJwtFetchTokenPayloadInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->request = $this->request->withParsedBody(['token' => JWT::encode([], 'invalid')]);
+        $this->request = $this->request->withParsedBody(['token' => JWT::encode(['uuid' => '123'], 'invalid')]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => 'secret',
@@ -157,7 +162,7 @@ class SlimJwtAuthenticationTest extends TestCase
 
     public function testJwtFetchTokenCookieValid()
     {
-        $this->request = $this->request->withCookieParams(['token' => JWT::encode([], 'secret')]);
+        $this->request = $this->request->withCookieParams(['token' => JWT::encode(['uuid' => '123'], 'secret')]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => 'secret',
@@ -166,13 +171,14 @@ class SlimJwtAuthenticationTest extends TestCase
         $response = $this->app->handle($this->request);
 
         $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('123', (string) $response->getBody());
     }
 
     public function testJwtFetchTokenCookieInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->request = $this->request->withCookieParams(['token' => JWT::encode([], 'invalid')]);
+        $this->request = $this->request->withCookieParams(['token' => JWT::encode(['uuid' => '123'], 'invalid')]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => 'secret',

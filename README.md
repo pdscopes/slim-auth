@@ -51,7 +51,7 @@ Default options for authentication are:
     'cookie'      => 'X-Auth',
     // string - the identifier for the token in the payload
     'payload'     => null,
-    // string - the name to store the token in the Slim container
+    // string - the name to store the token in the request attributes
     'attribute'   => 'token',
     // object - an instance of a Psr\LoggerInterface
     'logger'      => null,
@@ -59,37 +59,7 @@ Default options for authentication are:
 ```
 
 
-When authentication fails the middleware checks the container for an `notAuthenticatedHandler`; if there is no such handler then an `NotAuthenticatedException` is thrown. An `notAuthenticatedHandler` should have the following signature:
-
-```php
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-use Psr\Http\Message\ResponseInterface;
-
-function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
-    /** @var ResponseInterface $response Generated without the handler as we are blocked continued access */
-
-    // Example 1: Plain text unauthorized
-//    $response->getBody()->write('Unauthorized');
-//    return $response->withStatus(401)
-//        ->withHeader('Content-Type', 'text/plain');
-
-    // Example 2: JSON encoded unauthorized
-//    $response->getBody()->write('{"message":"Unauthorized"}');
-//    $response = $response->withStatus(401)
-//        ->withHeader('Content-Type', 'application/json');
-
-    // Example 2: Redirect to a sign in form
-//    $response = $response->withStatus(302)
-//        ->withHeader('Location', '/path/to/sign-in/form');
-
-    // Example 3: Redirect to a sign in form with the request
-//    $response = $response->withStatus(302)
-//        ->withHeader('Location', '/path/to/sign-in/form?referrer=' . urlencode($request->getRequestTarget()));
-
-    return $response;
-}
-```
+When authentication fails the middleware throws an `HttpUnauthorizedException` is thrown.
 
 ### SimpleTokenAuthentication
 Simple token authentication is an implementation of Authentication which allows the user to provide a callable to validate a token. The callable is passed to Simple token authentication using the option:
@@ -127,6 +97,6 @@ JWT authentication is an implementation of Authentication which allows the user 
 ## Authorisation
 A middleware to determine whether an authenticated request has authorisation to access the requested route.
 
-When Authorisation fails the middleware throws an `HttpUnauthorizedException` exception.
+When Authorisation fails the middleware throws an `HttpForbiddenException` exception.
 
-_Note_: If you need to access the route from within your app middleware you must set '`determineRouteBeforeAppMiddleware`' to `true` in your configuration otherwise `getAttribute('route')` will return `null`. The route is always available in route middleware.
+_Note_: If you need to access the route from within your app middleware you will need to add the `Middleware\RoutingMiddleware` middleware to your application just before you call `run()`.

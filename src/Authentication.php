@@ -82,9 +82,8 @@ abstract class Authentication implements MiddlewareInterface
             return $this->unauthenticated($request);
         }
 
-        // Fetch to token from the request and store in container
+        // Fetch to token from the request and store as a request attribute
         $token = $this->fetchToken($request);
-        $this->ci->set($this->options['attribute'], $token);
         $request = $request->withAttribute($this->options['attribute'], $token);
 
         // Validate the token
@@ -109,6 +108,9 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * Defines the behaviour of the authentication middleware when the request is authenticated.
+     *
+     * This method MAY also take the opportunity to store information regarding the
+     * entity requesting authentication in the request, e.g. a User object.
      *
      * @param ServerRequestInterface  $request
      * @param RequestHandlerInterface $handler
@@ -225,9 +227,6 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * Checks the validity of the the given token and MUST return the result.
-     *
-     * This method MAY also take the opportunity to store information regarding the
-     * entity requesting authentication in the container, e.g. a User object.
      *
      * @param mixed $token
      * @return bool True if the token is valid, false otherwise
