@@ -3,6 +3,11 @@
 
 An authentication and authorisation middleware for [Slim 4 framework](https://www.slimframework.com/).
 
+## Installation
+```
+composer require madesimple/slim-auth
+```
+
 ## Authentication
 A middleware to determine whether the request contains valid authentication token. The middleware has been designed so that it can easily be extended to:
 
