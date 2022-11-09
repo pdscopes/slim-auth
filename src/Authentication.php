@@ -37,6 +37,7 @@ abstract class Authentication implements MiddlewareInterface
         'payload'     => null,
         'attribute'   => 'token',
         'logger'      => null,
+        'queryparam'  => null,
     ];
 
     /**
@@ -180,6 +181,10 @@ abstract class Authentication implements MiddlewareInterface
         // Finally fall back on cookie
         if (empty($token) && !empty($this->options['cookie'])) {
             $token = $request->getCookieParams()[$this->options['cookie']] ?? '';
+        }
+
+        if (empty($token) && !empty($this->options['queryparam'])) {
+            $token = $request->getQueryParams()[$this->options['queryparam']] ?? '';
         }
 
         // Return the token
