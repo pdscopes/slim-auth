@@ -1,5 +1,6 @@
 # madesimple/slim-auth
-[![Build Status](https://travis-ci.org/pdscopes/slim-auth.svg?branch=master)](https://travis-ci.org/pdscopes/slim-auth)
+[![Code Style](https://github.com/pdscopes/slim-auth/actions/workflows/code-style.yml/badge.svg)](https://github.com/pdscopes/slim-auth/actions/workflows/code-style.yml)
+[![Test Suite](https://github.com/pdscopes/slim-auth/actions/workflows/test-suite.yml/badge.svg)](https://github.com/pdscopes/slim-auth/actions/workflows/test-suite.yml)
 
 Authentication and authorisation middleware for [Slim 4 framework](https://www.slimframework.com/).
 
