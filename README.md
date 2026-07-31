@@ -10,7 +10,8 @@ composer require madesimple/slim-auth
 ```
 
 ## Authentication
-A middleware to determine whether the request contains a valid authentication token. The middleware has been designed so that it can easily be extended to:
+A middleware to determine whether the request contains a valid authentication token.
+The middleware has been designed so that it can easily be extended to:
 
 * handle any type of token retrieval;
 * handle any type of validation method; and,
@@ -35,7 +36,8 @@ $app->get($pattern, $callable)
     ->add(new SimpleTokenAuthentication($app->getContainer(), $options));
 ```
 
-*Side node*: We recommend that if you are going to be adding the same authentication to more than more groups/routes to put the middleware in `dependencies.php`.
+*Side node*: We recommend that if you are going to be adding the same authentication to more than more groups/routes to
+put the middleware in `dependencies.php`.
 
 
 Default options for authentication are:
@@ -68,7 +70,8 @@ Default options for authentication are:
 When authentication fails, the middleware throws an `HttpUnauthorizedException` is thrown.
 
 ### SimpleTokenAuthentication
-Simple token authentication is an implementation of Authentication which allows the user to provide a callable to validate a token. The callable is passed to Simple token authentication using the option:
+Simple token authentication is an implementation of Authentication which allows the user to provide a callable to
+validate a token. The callable is passed to Simple token authentication using the option:
 ```php
 [
     // callable - function to validate the token [required]
@@ -85,7 +88,8 @@ function ($token): bool {
 ```
 
 ### JwtAuthentication
-JWT authentication is an implementation of Authentication which allows the user to use JWT as authentication tokens. JWT authentication overrides the default regex and adds two extra options:
+JWT authentication is an extension of Authentication which implements `validate` but adds an abstract function `decode`.
+JWT authentication overrides the default regex and adds two extra options:
 ```php
 [
     // string - Overrides the default regex
@@ -93,10 +97,34 @@ JWT authentication is an implementation of Authentication which allows the user 
 
     // string - JWT secret [required]
     'secret' => '',
+
     // array - list of JWT algorithms [optional]
-    'algorithm' => ['HS256', 'HS512', 'HS384'],
+    'algorithm' => ['HS256'],
 
 ];
+```
+
+FirebaseJwtAuthentication is an implementation of JwtAuthentication which uses `firebase/php-jwt`. If you specify more
+than one possible algorithm in your options, then your JWT will need to include the `kid` in the headers. For example:
+```php
+$jwt1 = \Firebase\JWT\JWT::encode($payload, $secret1, 'HS256', 'kid1')
+$jwt2 = \Firebase\JWT\JWT::encode($payload, $secret2, 'HS512', 'kid2')
+
+// ...
+
+$middleware = new \Slim\Middleware\Authentication\FirebaseJwtAuthentication($ci, [
+    // ...
+    'secret' => [
+        'kid1' => $secret1,
+        'kid2' => $secret2,
+    ],
+    'algorithm' => [
+        'kid1' => 'HS256',
+        'kid2' => 'HS512',
+    ],
+    // ...
+
+]);s
 ```
 
 
@@ -105,4 +133,5 @@ A middleware to determine whether an authenticated request has authorisation to 
 
 When Authorisation fails, the middleware throws an `HttpForbiddenException` exception.
 
-_Note_: If you need to access the route from within your app middleware, you will need to add the `Middleware\RoutingMiddleware` middleware to your application just before you call `run()`.
+_Note_: If you need to access the route from within your app middleware, you will need to add the
+`Middleware\RoutingMiddleware` middleware to your application just before you call `run()`.

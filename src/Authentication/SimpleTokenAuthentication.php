@@ -20,6 +20,7 @@ class SimpleTokenAuthentication extends Authentication
         $this->ci = $ci;
     }
 
+    #[\Override]
     public function validate(mixed $token): bool
     {
         if (!is_callable($this->options['validate'])) {

@@ -2,17 +2,17 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Unit\Authentication;
 
+use MadeSimple\Slim\Middleware\Tests\GeneratesBearerStringTrait;
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
-use MadeSimple\Slim\Middleware\Tests\Unit\GeneratesBearerStringTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Slim\Middleware\Authentication\JwtAuthentication;
+use Slim\Middleware\Authentication\FirebaseJwtAuthentication;
 
-class JwtAuthenticationTest extends TestCase
+class FirebaseJwtAuthenticationTest extends TestCase
 {
     use GeneratesBearerStringTrait;
 
@@ -32,7 +32,7 @@ class JwtAuthenticationTest extends TestCase
     #[Test]
     public function constructWithoutOptions()
     {
-        $auth = new JwtAuthentication($this->ci, []);
+        $auth = new FirebaseJwtAuthentication($this->ci, []);
 
         $this->assertEquals([
             'secure'      => true,
@@ -46,7 +46,7 @@ class JwtAuthenticationTest extends TestCase
             'attribute'   => 'token',
             'logger'      => null,
             'secret'      => '',
-            'algorithm'   => ['HS256', 'HS512', 'HS384'],
+            'algorithm'   => ['HS256'],
             'queryparam'  => null,
         ], $auth->getOptions());
     }
@@ -58,7 +58,7 @@ class JwtAuthenticationTest extends TestCase
     #[DataProvider('constructWithOptionsProvider')]
     public function constructWithOptions(string $option, mixed $value)
     {
-        $auth = new JwtAuthentication($this->ci, [$option => $value]);
+        $auth = new FirebaseJwtAuthentication($this->ci, [$option => $value]);
 
         $expected = [
             'secure'      => true,
@@ -72,7 +72,7 @@ class JwtAuthenticationTest extends TestCase
             'attribute'   => 'token',
             'logger'      => null,
             'secret'      => '',
-            'algorithm'   => ['HS256', 'HS512', 'HS384'],
+            'algorithm'   => ['HS256'],
             'queryparam'  => null,
         ];
         $expected[$option] = $value;
@@ -104,7 +104,7 @@ class JwtAuthenticationTest extends TestCase
     public function fetchTokenValid()
     {
         $token = '123';
-        $auth    = new JwtAuthentication($this->ci, []);
+        $auth    = new FirebaseJwtAuthentication($this->ci, []);
 
         /** @var ServerRequestInterface|MockObject $mockRequest */
         $mockRequest = $this->getMockBuilder(ServerRequestInterface::class)->disableOriginalConstructor()->getMock();
@@ -115,14 +115,14 @@ class JwtAuthenticationTest extends TestCase
     }
 
     /**
-     * Test validating a valid JWT.
+     * Test validating a valid JWT supplying a single algorithm.
      */
     #[Test]
-    public function validate()
+    public function validateWithSingleAlgorithm()
     {
         $encoded = $this->generateJwt(alg: 'HS256');
 
-        $auth = new JwtAuthentication($this->ci, [
+        $auth = new FirebaseJwtAuthentication($this->ci, [
             'environment' => [],
             'secret'      => $this->stdKey,
             'algorithm'   => ['HS256'],
@@ -132,17 +132,68 @@ class JwtAuthenticationTest extends TestCase
     }
 
     /**
-     * Test validating an invalid JWT.
+     * Test validating an invalid JWT supplying a single algorithm.
      */
     #[Test]
-    public function validateInvalid()
+    public function validateWithSingleAlgorithmInvalid()
     {
         $encoded = 'invalid-token';
 
-        $auth = new JwtAuthentication($this->ci, [
+        $auth = new FirebaseJwtAuthentication($this->ci, [
             'environment' => [],
-            'secret'      => 'secret',
+            'secret'      => $this->stdKey,
             'algorithm'   => ['HS256'],
+        ]);
+
+        $this->assertFalse($auth->validate($encoded));
+    }
+
+    /**
+     * Test validating a valid JWT supplying multiple algorithms.
+     */
+    #[Test]
+    public function validateWithMultipleAlgorithm()
+    {
+        $encoded = $this->generateJwt(alg: 'HS512', kid: 1);
+
+        $auth = new FirebaseJwtAuthentication($this->ci, [
+            'environment' => [],
+            'secret'      => $this->stdKey,
+            'algorithm'   => ['HS256', 'HS512', 'HS384'],
+        ]);
+
+        $this->assertTrue($auth->validate($encoded));
+    }
+
+    /**
+     * Test validating a valid JWT supplying multiple algorithms.
+     */
+    #[Test]
+    public function validateWithMultipleAlgorithmAndSecret()
+    {
+        $encoded = $this->generateJwt(alg: 'HS512', kid: 1);
+
+        $auth = new FirebaseJwtAuthentication($this->ci, [
+            'environment' => [],
+            'secret'      => [$this->altKey, $this->stdKey, $this->altKey],
+            'algorithm'   => ['HS256', 'HS512', 'HS384'],
+        ]);
+
+        $this->assertTrue($auth->validate($encoded));
+    }
+
+    /**
+     * Test validating an invalid JWT supplying multiple algorithms.
+     */
+    #[Test]
+    public function validateWithMultipleAlgorithmInvalid()
+    {
+        $encoded = 'invalid-token';
+
+        $auth = new FirebaseJwtAuthentication($this->ci, [
+            'environment' => [],
+            'secret'      => $this->stdKey,
+            'algorithm'   => ['HS256', 'HS512', 'HS384'],
         ]);
 
         $this->assertFalse($auth->validate($encoded));

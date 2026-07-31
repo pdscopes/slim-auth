@@ -33,7 +33,8 @@
         }
     },
     "suggest": {
-        "firebase/php-jwt": "Required to use JwtAuthentication (^7.0)"
+        "ext-openssl": "Required to use keys/certificates with firebase/php-jwt",
+        "firebase/php-jwt": "Required to use FirebaseJwtAuthentication (^7.0)"
     },
     "config": {
         "audit": {

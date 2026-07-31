@@ -2,18 +2,18 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Integration\Authentication;
 
+use MadeSimple\Slim\Middleware\Tests\GeneratesBearerStringTrait;
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
-use MadeSimple\Slim\Middleware\Tests\Unit\GeneratesBearerStringTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Exception\HttpUnauthorizedException;
 use Slim\Factory\AppFactory;
-use Slim\Middleware\Authentication\JwtAuthentication;
+use Slim\Middleware\Authentication\FirebaseJwtAuthentication;
 use Slim\Psr7\Factory\ServerRequestFactory;
 
-class SlimJwtAuthenticationTest extends TestCase
+class SlimFirebaseJwtAuthenticationTest extends TestCase
 {
     use GeneratesBearerStringTrait;
 
@@ -41,7 +41,7 @@ class SlimJwtAuthenticationTest extends TestCase
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), []));
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), []));
         $this->app->handle($this->request);
     }
 
@@ -50,7 +50,7 @@ class SlimJwtAuthenticationTest extends TestCase
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure' => false,
         ]));
         $this->app->handle($this->request);
@@ -60,7 +60,7 @@ class SlimJwtAuthenticationTest extends TestCase
     public function jwtFetchTokenHeaderValid()
     {
         $this->request = $this->request->withHeader('Authorization', $this->generateBearer());
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => $this->stdKey,
         ]));
@@ -76,7 +76,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withHeader('Authorization', $this->generateBearer(key: $this->altKey));
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => $this->stdKey,
         ]));
@@ -89,7 +89,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
             'HTTP_AUTH' => $this->generateJwt(),
         ]);
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure'      => false,
             'secret'      => $this->stdKey,
             'environment' => ['HTTP_AUTH'],
@@ -108,7 +108,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
             'HTTP_AUTH' => $this->generateJwt(key: $this->altKey),
         ]);
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure'      => false,
             'secret'      => $this->stdKey,
             'environment' => ['HTTP_AUTH'],
@@ -122,7 +122,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $payload = ['token' => $this->generateJwt()];
         $this->request = $this->request->withParsedBody($payload);
 
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure'  => false,
             'secret'  => $this->stdKey,
             'payload' => 'token',
@@ -140,7 +140,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $payload->token = $this->generateJwt();
         $this->request = $this->request->withParsedBody($payload);
 
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure'  => false,
             'secret'  => $this->stdKey,
             'payload' => 'token',
@@ -157,7 +157,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withParsedBody(['token' => $this->generateJwt(key: $this->altKey)]);
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => $this->stdKey,
             'payload' => 'token',
@@ -169,7 +169,7 @@ class SlimJwtAuthenticationTest extends TestCase
     public function jwtFetchTokenCookieValid()
     {
         $this->request = $this->request->withCookieParams(['token' => $this->generateJwt()]);
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => $this->stdKey,
             'cookie' => 'token',
@@ -186,7 +186,7 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withCookieParams(['token' => $this->generateJwt(key: $this->altKey)]);
-        $this->app->add(new JwtAuthentication($this->app->getContainer(), [
+        $this->app->add(new FirebaseJwtAuthentication($this->app->getContainer(), [
             'secure' => false,
             'secret' => $this->stdKey,
             'cookie' => 'token',
