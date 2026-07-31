@@ -1,0 +1,24 @@
+name: Test Suite
+on: [push]
+
+jobs:
+  test-suite:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ["8.3", "8.4", "8.5"]
+    name: PHP $${matrix.php}} Unit Test
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Composer Install
+        uses: php-actions/composer@v6
+
+      - name: PHPUnit Test Suite
+        uses: php-actions/phpunit@v4
+        with:
+          version:
+          php_version: $${{matrix.php}}
+          bootstrap: vendor/autoload.php
+          configuration: phpunit.xml.example
+          args: --coverage-text
