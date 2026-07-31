@@ -17,7 +17,7 @@ jobs:
       - name: PHPUnit Test Suite
         uses: php-actions/phpunit@v4
         with:
+          php_extensions: "xdebug"
           php_version: ${{ matrix.php }}
-          bootstrap: vendor/autoload.php
           configuration: phpunit.xml.example
-          args: --coverage-text
+          coverage_text: true
