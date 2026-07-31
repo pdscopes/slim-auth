@@ -259,12 +259,10 @@ class AuthenticationTest extends TestCase
 
     /**
      * Test that isSecure properly checks the request uri scheme.
-     * @param $scheme
-     * @param $secure
      */
     #[Test]
     #[DataProvider('isSecureChecksUriSchemeProvider')]
-    public function isSecureChecksUriScheme($scheme, $secure)
+    public function isSecureChecksUriScheme(string $scheme, bool $secure)
     {
         $mockRequest = $this->createMock(ServerRequestInterface::class);
 

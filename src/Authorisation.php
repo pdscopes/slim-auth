@@ -2,9 +2,7 @@
 
 namespace Slim\Middleware;
 
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -19,10 +17,6 @@ abstract class Authorisation implements MiddlewareInterface
 
     /**
      * Middleware constructor.
-     *
-     * @param ContainerInterface $ci
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function __construct(ContainerInterface $ci)
     {
@@ -39,9 +33,6 @@ abstract class Authorisation implements MiddlewareInterface
      * Process the request by calling `self::process`.
      *
      * @see Authorisation::process()
-     * @param ServerRequestInterface  $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
      * @throws HttpForbiddenException
      */
     public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -54,9 +45,6 @@ abstract class Authorisation implements MiddlewareInterface
      * Blocks the request if the authorisation rules are met, otherwise
      * allows the request forward through this middleware.
      *
-     * @param ServerRequestInterface  $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
      * @throws HttpForbiddenException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -73,8 +61,6 @@ abstract class Authorisation implements MiddlewareInterface
     /**
      * Defines the behaviour of the authorisation middleware when the request is unauthorised.
      *
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
      * @throws HttpForbiddenException
      */
     public function unauthorised(ServerRequestInterface $request): ResponseInterface
@@ -84,10 +70,6 @@ abstract class Authorisation implements MiddlewareInterface
 
     /**
      * Defines the behaviour of the authorisation middleware when the request is authorised.
-     *
-     * @param ServerRequestInterface  $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
      */
     public function authorised(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -105,9 +87,6 @@ abstract class Authorisation implements MiddlewareInterface
     /**
      * Determine whether the authenticated request has permissions to access this
      * request with the specified rules.
-     *
-     * @param ServerRequestInterface $request
-     * @return bool
      */
     abstract protected function hasAuthorisation(ServerRequestInterface $request): bool;
 }

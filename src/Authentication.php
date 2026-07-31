@@ -11,12 +11,6 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Slim\Exception\HttpUnauthorizedException;
 
-/**
- * Class Authentication
- *
- * @package MadeSimple\Slim\Middleware
- * @author
- */
 abstract class Authentication implements MiddlewareInterface
 {
     protected ?LoggerInterface $logger;
@@ -36,9 +30,6 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * Middleware constructor.
-     *
-     * @param ContainerInterface $ci
-     * @param array $options
      */
     public function __construct(ContainerInterface $ci, array $options)
     {
@@ -56,9 +47,6 @@ abstract class Authentication implements MiddlewareInterface
      * Process the request by calling `self::process`.
      *
      * @see Authentication::process()
-     * @param ServerRequestInterface $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
      * @throws HttpUnauthorizedException
      */
     public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -71,9 +59,6 @@ abstract class Authentication implements MiddlewareInterface
      * Blocks the request if the authentication token is not valid, otherwise
      * allows the request forward through this middleware.
      *
-     * @param ServerRequestInterface $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
      * @throws HttpUnauthorizedException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -98,8 +83,6 @@ abstract class Authentication implements MiddlewareInterface
     /**
      * Defines the behaviour of the authentication middleware when the request is unauthenticated.
      *
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
      * @throws HttpUnauthorizedException
      */
     public function unauthenticated(ServerRequestInterface $request): ResponseInterface
@@ -112,10 +95,6 @@ abstract class Authentication implements MiddlewareInterface
      *
      * This method MAY also take the opportunity to store information regarding the
      * entity requesting authentication in the request, e.g. a User object.
-     *
-     * @param ServerRequestInterface  $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
      */
     public function authenticated(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -127,9 +106,6 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * Determine whether the request is secure.
-     *
-     * @param ServerRequestInterface $request
-     * @return bool
      */
     public function isSecure(ServerRequestInterface $request): bool
     {
@@ -220,9 +196,6 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * Checks the validity of the given token and MUST return the result.
-     *
-     * @param mixed $token
-     * @return bool True if the token is valid, false otherwise
      */
     abstract public function validate(mixed $token): bool;
 }

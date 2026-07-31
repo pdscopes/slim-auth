@@ -8,8 +8,6 @@ class TestContainer implements \Psr\Container\ContainerInterface
 
     /**
      * TestContainer constructor.
-     *
-     * @param array|null $data
      */
     public function __construct(?array $data = null)
     {

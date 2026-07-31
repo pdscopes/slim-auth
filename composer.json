@@ -12,7 +12,8 @@
         "firebase/php-jwt": "^7.0",
         "phpunit/phpunit": "^12",
         "psr/container": "^2.0",
-        "slim/psr7": "^1.1"
+        "slim/psr7": "^1.1",
+        "squizlabs/php_codesniffer": "^4.0"
     },
     "license": "MIT",
     "authors": [

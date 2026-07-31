@@ -1,6 +1,6 @@
 <?php
 
-namespace MadeSimple\Slim\Middleware\Tests;
+namespace MadeSimple\Slim\Middleware\Tests\Unit;
 
 use Firebase\JWT\JWT;
 

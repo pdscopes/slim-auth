@@ -17,9 +17,6 @@ class JwtAuthentication extends Authentication
 
     /**
      * JwtAuthentication constructor.
-     *
-     * @param ContainerInterface $ci
-     * @param array $options
      */
     public function __construct(ContainerInterface $ci, array $options)
     {

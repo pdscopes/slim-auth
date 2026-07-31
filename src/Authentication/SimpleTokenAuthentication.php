@@ -11,9 +11,6 @@ class SimpleTokenAuthentication extends Authentication
 
     /**
      * SimpleTokenAuthentication constructor.
-     *
-     * @param ContainerInterface $ci
-     * @param array $options
      */
     public function __construct(ContainerInterface $ci, array $options)
     {

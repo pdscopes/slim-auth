@@ -25,8 +25,6 @@ class AuthorisationTest extends TestCase
     }
 
     /**
-     * @param bool $validate
-     * @param array $methods
      * @return Authorisation|Stub
      */
     protected function stubAuthorisation(bool $validate, array $methods = [])
@@ -42,8 +40,6 @@ class AuthorisationTest extends TestCase
     }
 
     /**
-     * @param bool $validate
-     * @param array $methods
      * @return Authorisation|MockObject
      */
     protected function mockAuthorisation(bool $validate, array $methods = [])

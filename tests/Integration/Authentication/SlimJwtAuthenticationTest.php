@@ -2,8 +2,8 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Integration\Authentication;
 
-use MadeSimple\Slim\Middleware\Tests\GeneratesBearerStringTrait;
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use MadeSimple\Slim\Middleware\Tests\Unit\GeneratesBearerStringTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;

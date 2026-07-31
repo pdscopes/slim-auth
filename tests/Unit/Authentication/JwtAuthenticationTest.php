@@ -2,10 +2,9 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Unit\Authentication;
 
-use MadeSimple\Slim\Middleware\Tests\GeneratesBearerStringTrait;
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use MadeSimple\Slim\Middleware\Tests\Unit\GeneratesBearerStringTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
