@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         php: ["8.3", "8.4", "8.5"]
-    name: PHP $${matrix.php}} Unit Test
+    name: PHP ${{ matrix.php }} Unit Test
     steps:
       - uses: actions/checkout@v6
 
@@ -17,7 +17,7 @@ jobs:
       - name: PHPUnit Test Suite
         uses: php-actions/phpunit@v4
         with:
-          php_version: $${{matrix.php}}
+          php_version: ${{ matrix.php }}
           bootstrap: vendor/autoload.php
           configuration: phpunit.xml.example
           args: --coverage-text
