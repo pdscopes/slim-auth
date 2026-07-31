@@ -16,6 +16,8 @@ jobs:
 
       - name: PHPUnit Test Suite
         uses: php-actions/phpunit@v4
+        env:
+          XDEBUG_MODE: coverage
         with:
           php_extensions: "xdebug"
           php_version: ${{ matrix.php }}
