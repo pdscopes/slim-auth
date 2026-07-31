@@ -124,7 +124,18 @@ $middleware = new \Slim\Middleware\Authentication\FirebaseJwtAuthentication($ci,
     ],
     // ...
 
-]);s
+]);
+```
+
+If you only use a single secret but allow multiple algorithms, then the configuration is simpler:
+```php
+$middleware = new \Slim\Middleware\Authentication\FirebaseJwtAuthentication($ci, [
+    // ...
+    'secret' => $secret,
+    'algorithm' => ['HS256', 'HS512'],
+    // ...
+
+]);
 ```
 
 
