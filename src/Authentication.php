@@ -7,6 +7,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Slim\Exception\HttpUnauthorizedException;
 
@@ -18,15 +19,8 @@ use Slim\Exception\HttpUnauthorizedException;
  */
 abstract class Authentication implements MiddlewareInterface
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $ci;
-
-    /**
-     * @var array
-     */
-    protected $options = [
+    protected ?LoggerInterface $logger;
+    protected array $options = [
         'secure'      => true,
         'relaxed'     => ['localhost', '127.0.0.1'],
         'environment' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
@@ -48,7 +42,13 @@ abstract class Authentication implements MiddlewareInterface
      */
     public function __construct(ContainerInterface $ci, array $options)
     {
-        $this->ci      = $ci;
+        if ($ci->has('logger')) {
+            $this->logger = $ci->get('logger');
+        } elseif ($ci->has(LoggerInterface::class)) {
+            $this->logger = $ci->get(LoggerInterface::class);
+        } else {
+            $this->logger = null;
+        }
         $this->options = $options + $this->options;
     }
 
@@ -147,11 +147,8 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * Extract the authentication token from the request.
-     *
-     * @param ServerRequestInterface $request
-     * @return mixed
      */
-    public function fetchToken(ServerRequestInterface $request)
+    public function fetchToken(ServerRequestInterface $request): string
     {
         $token = '';
 
@@ -162,7 +159,7 @@ abstract class Authentication implements MiddlewareInterface
             }
         }
 
-        // Fall back on the header name from the options array
+        // Fall back on the header name from the "options" array
         if (empty($token) && !empty($this->options['header'])) {
             $headers = $request->getHeader($this->options['header']);
             $token   = $headers[0] ?? '';
@@ -178,7 +175,7 @@ abstract class Authentication implements MiddlewareInterface
             }
         }
 
-        // Finally fall back on cookie
+        // Finally, fall back on cookie
         if (empty($token) && !empty($this->options['cookie'])) {
             $token = $request->getCookieParams()[$this->options['cookie']] ?? '';
         }
@@ -197,12 +194,8 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * Get a specific Authentication middleware option.
-     *
-     * @param string $opt
-     * @param mixed|null $default
-     * @return mixed|null
      */
-    public function getOption(string $opt, $default = null)
+    public function getOption(string $opt, mixed $default = null): mixed
     {
         return $this->options[$opt] ?? $default;
     }
@@ -219,22 +212,17 @@ abstract class Authentication implements MiddlewareInterface
 
     /**
      * @see LogLevel
-     * @param string $level
-     * @param string $message
-     * @param array  $context
      */
-    protected function log($level, $message, array $context = []): void
+    protected function log(string $level, string $message, array $context = []): void
     {
-        if ($this->ci->has('logger')) {
-            $this->ci->get('logger')->log($level, $message, $context);
-        }
+        $this->logger?->log($level, $message, $context);
     }
 
     /**
-     * Checks the validity of the the given token and MUST return the result.
+     * Checks the validity of the given token and MUST return the result.
      *
      * @param mixed $token
      * @return bool True if the token is valid, false otherwise
      */
-    public abstract function validate($token): bool;
+    abstract public function validate(mixed $token): bool;
 }

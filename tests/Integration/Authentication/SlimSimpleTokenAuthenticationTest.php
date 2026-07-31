@@ -3,6 +3,7 @@
 namespace MadeSimple\Slim\Middleware\Tests\Integration\Authentication;
 
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -13,15 +14,8 @@ use Slim\Psr7\Factory\ServerRequestFactory;
 
 class SlimSimpleTokenAuthenticationTest extends TestCase
 {
-    /**
-     * @var \Slim\App
-     */
-    private $app;
-
-    /**
-     * @var ServerRequestInterface
-     */
-    private $request;
+    private \Slim\App $app;
+    private ServerRequestInterface $request;
 
     protected function setUp(): void
     {
@@ -38,7 +32,8 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         });
     }
 
-    public function testSimpleRequestInsecure()
+    #[Test]
+    public function simpleRequestInsecure()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
@@ -46,7 +41,8 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         $this->app->handle($this->request);
     }
 
-    public function testSimpleFetchTokenMissing()
+    #[Test]
+    public function simpleFetchTokenMissing()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
@@ -56,11 +52,12 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         $this->app->handle($this->request);
     }
 
-    public function testSimpleFetchTokenHeaderValid()
+    #[Test]
+    public function simpleFetchTokenHeaderValid()
     {
         $this->request = $this->request->withHeader('X-Auth', 'Bearer token');
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure' => false,
         ]));
         $response = $this->app->handle($this->request);
@@ -68,25 +65,27 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testSimpleFetchTokenHeaderInvalid()
+    #[Test]
+    public function simpleFetchTokenHeaderInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withHeader('X-Auth', 'Bearer invalid');
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure' => false,
         ]));
         $this->app->handle($this->request);
     }
 
-    public function testSimpleFetchTokenServerParamValid()
+    #[Test]
+    public function simpleFetchTokenServerParamValid()
     {
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
             'HTTP_AUTH' => 'Bearer token',
         ]);
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure'      => false,
             'environment' => ['HTTP_AUTH'],
         ]));
@@ -95,7 +94,8 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testSimpleFetchTokenServerParamInvalid()
+    #[Test]
+    public function simpleFetchTokenServerParamInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
@@ -103,20 +103,21 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
             'HTTP_AUTH' => 'invalid',
         ]);
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure'      => false,
             'environment' => ['HTTP_AUTH'],
         ]));
         $this->app->handle($this->request);
     }
 
-    public function testSimpleFetchTokenPayloadArrayValid()
+    #[Test]
+    public function simpleFetchTokenPayloadArrayValid()
     {
         $payload = ['token' => 'Bearer token'];
         $this->request = $this->request->withParsedBody($payload);
 
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure'  => false,
             'payload' => 'token',
         ]));
@@ -125,14 +126,15 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testSimpleFetchTokenPayloadObjectValid()
+    #[Test]
+    public function simpleFetchTokenPayloadObjectValid()
     {
         $payload = new \stdClass();
         $payload->token = 'Bearer token';
         $this->request = $this->request->withParsedBody($payload);
 
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure'  => false,
             'payload' => 'token',
         ]));
@@ -141,24 +143,26 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testSimpleFetchTokenPayloadInvalid()
+    #[Test]
+    public function simpleFetchTokenPayloadInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withParsedBody(['token' => 'invalid']);
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure' => false,
             'payload' => 'token',
         ]));
         $this->app->handle($this->request);
     }
 
-    public function testSimpleFetchTokenCookieValid()
+    #[Test]
+    public function simpleFetchTokenCookieValid()
     {
         $this->request = $this->request->withCookieParams(['token' => 'Bearer token']);
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure' => false,
             'cookie' => 'token',
         ]));
@@ -167,13 +171,14 @@ class SlimSimpleTokenAuthenticationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testSimpleFetchTokenCookieInvalid()
+    #[Test]
+    public function simpleFetchTokenCookieInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = $this->request->withCookieParams(['token' => 'invalid']);
         $this->app->add(new SimpleTokenAuthentication($this->app->getContainer(), [
-            'validate' => function ($token) { return $token === 'Bearer token'; },
+            'validate' => fn ($token) => $token === 'Bearer token',
             'secure' => false,
             'cookie' => 'token',
         ]));

@@ -3,7 +3,10 @@
 namespace MadeSimple\Slim\Middleware\Tests\Unit;
 
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -13,125 +16,126 @@ use Slim\Middleware\Authentication;
 
 class AuthenticationTest extends TestCase
 {
-    /**
-     * @var TestContainer
-     */
-    protected $ci;
+    protected TestContainer $ci;
 
-    /**
-     * @var ServerRequestInterface|MockObject
-     */
-    protected $mockRequest;
-
-    /**
-     * @var RequestHandlerInterface|MockObject
-     */
-    protected $mockHandler;
-
-    /**
-     * @InheritDoc
-     */
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->ci = new TestContainer();
-        $this->mockRequest = $this->createMock(ServerRequestInterface::class);
-        $this->mockHandler = $this->createMock(RequestHandlerInterface::class);
     }
 
     /**
-     * @param array $options
-     * @param array $methods
      * @return Authentication|MockObject
+     */
+    protected function mockAuthentication(array $options = [], array $methods = [])
+    {
+        // Ensure all abstract methods are also included
+        $methods = array_values(array_unique(array_merge($methods, ['validate'])));
+        // Build the mock object
+        return $this->getMockBuilder(Authentication::class)
+            ->enableOriginalConstructor()
+            ->setConstructorArgs([$this->ci, $options])
+            ->onlyMethods($methods)
+            ->getMock();
+    }
+
+    /**
+     * @return Authentication|Stub
      */
     protected function stubAuthentication(array $options = [], array $methods = [])
     {
-        return $this->getMockForAbstractClass(
-            Authentication::class,
-            [$this->ci, $options],
-            '',
-            true,
-            true,
-            true,
-            $methods
-        );
+        // Ensure all abstract methods are also included
+        $methods = array_values(array_unique(array_merge($methods, ['validate'])));
+        // Build the mock object
+        return $this->getStubBuilder(Authentication::class)
+            ->enableOriginalConstructor()
+            ->setConstructorArgs([$this->ci, $options])
+            ->onlyMethods($methods)
+            ->getStub();
     }
 
 
     /**
      * Test __invoke insecure request.
-     *
-     * @throws HttpUnauthorizedException
      */
-    public function testInvokeInsecure()
+    #[Test]
+    public function invokeInsecure()
     {
-        $authentication = $this->stubAuthentication([], ['isSecure', 'unauthenticated']);
+        $stubRequest = $this->createStub(ServerRequestInterface::class);
+        $stubHandler = $this->createStub(RequestHandlerInterface::class);
+
+        $authentication = $this->mockAuthentication([], ['isSecure', 'unauthenticated']);
         $authentication
             ->expects($this->once())
             ->method('isSecure')
-            ->with($this->mockRequest)
+            ->with($stubRequest)
             ->willReturn(false);
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest);
+            ->with($stubRequest);
 
-        $authentication->__invoke($this->mockRequest, $this->mockHandler);
+        $authentication->__invoke($stubRequest, $stubHandler);
     }
 
     /**
-     * Test invoke secure request without a token.
-     *
-     * @throws HttpUnauthorizedException
+     * Test invoke a secure request without a token.
      */
-    public function testInvokeNoToken()
+    #[Test]
+    public function invokeNoToken()
     {
-        $authentication = $this->stubAuthentication([
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+        $stubHandler = $this->createStub(RequestHandlerInterface::class);
+
+        $authentication = $this->mockAuthentication([
             'attribute' => 'ATTRIBUTE'
         ], ['isSecure', 'fetchToken', 'unauthenticated']);
         $authentication
             ->expects($this->once())
             ->method('isSecure')
-            ->with($this->mockRequest)
+            ->with($mockRequest)
             ->willReturn(true);
         $authentication
             ->expects($this->once())
             ->method('fetchToken')
-            ->with($this->mockRequest)
+            ->with($mockRequest)
             ->willReturn('');
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest);
-        $this->mockRequest
+            ->with($mockRequest);
+        $mockRequest
             ->expects($this->once())
             ->method('withAttribute')
             ->with('ATTRIBUTE', '')
             ->willReturnSelf();
 
-        $authentication->__invoke($this->mockRequest, $this->mockHandler);
+        $authentication->__invoke($mockRequest, $stubHandler);
     }
 
     /**
-     * Test invoke secure request with an invalid token.
-     *
-     * @throws HttpUnauthorizedException
+     * Test invoke a secure request with an invalid token.
      */
-    public function testInvokeInvalidToken()
+    #[Test]
+    public function invokeInvalidToken()
     {
-        $authentication = $this->stubAuthentication([
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+        $stubHandler = $this->createStub(RequestHandlerInterface::class);
+
+        $authentication = $this->mockAuthentication([
             'attribute' => 'ATTRIBUTE'
         ], ['isSecure', 'fetchToken', 'unauthenticated']);
         $authentication
             ->expects($this->once())
             ->method('isSecure')
-            ->with($this->mockRequest)
+            ->with($mockRequest)
             ->willReturn(true);
         $authentication
             ->expects($this->once())
             ->method('fetchToken')
-            ->with($this->mockRequest)
+            ->with($mockRequest)
             ->willReturn('token');
         $authentication
             ->expects($this->once())
@@ -141,35 +145,37 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('unauthenticated')
-            ->with($this->mockRequest);
-        $this->mockRequest
+            ->with($mockRequest);
+        $mockRequest
             ->expects($this->once())
             ->method('withAttribute')
             ->with('ATTRIBUTE', 'token')
             ->willReturnSelf();
 
-        $authentication->__invoke($this->mockRequest, $this->mockHandler);
+        $authentication->__invoke($mockRequest, $stubHandler);
     }
 
     /**
-     * Test invoke secure request with a valid token.
-     *
-     * @throws HttpUnauthorizedException
+     * Test invoke a secure request with a valid token.
      */
-    public function testInvokeValidToken()
+    #[Test]
+    public function invokeValidToken()
     {
-        $authentication = $this->stubAuthentication([
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+        $stubHandler = $this->createStub(RequestHandlerInterface::class);
+
+        $authentication = $this->mockAuthentication([
             'attribute' => 'ATTRIBUTE'
         ], ['isSecure', 'fetchToken', 'authenticated']);
         $authentication
             ->expects($this->once())
             ->method('isSecure')
-            ->with($this->mockRequest)
+            ->with($mockRequest)
             ->willReturn(true);
         $authentication
             ->expects($this->once())
             ->method('fetchToken')
-            ->with($this->mockRequest)
+            ->with($mockRequest)
             ->willReturn('token');
         $authentication
             ->expects($this->once())
@@ -179,84 +185,101 @@ class AuthenticationTest extends TestCase
         $authentication
             ->expects($this->once())
             ->method('authenticated')
-            ->with($this->mockRequest, $this->mockHandler);
-        $this->mockRequest
+            ->with($mockRequest, $stubHandler);
+        $mockRequest
             ->expects($this->once())
             ->method('withAttribute')
             ->with('ATTRIBUTE', 'token')
             ->willReturnSelf();
 
 
-        $authentication->__invoke($this->mockRequest, $this->mockHandler);
+        $authentication->__invoke($mockRequest, $stubHandler);
     }
 
     /**
      * Test HttpUnauthorizedException is thrown.
      */
-    public function testUnauthenticatedThrowsHttpUnauthorizedException()
+    #[Test]
+    public function unauthenticatedThrowsHttpUnauthorizedException()
     {
+        $stubRequest = $this->createStub(ServerRequestInterface::class);
+
         $this->expectException(HttpUnauthorizedException::class);
 
         $authentication = $this->stubAuthentication();
-        $authentication->unauthenticated($this->mockRequest);
+        $authentication->unauthenticated($stubRequest);
     }
 
     /**
      * Test authenticated calls RequestHandlerInterface::handle with the ServerRequestInterface object.
      */
-    public function testAuthenticated()
+    #[Test]
+    public function authenticated()
     {
-        $this->mockHandler->expects($this->once())->method('handle')->with($this->mockRequest);
+        $stubRequest = $this->createStub(ServerRequestInterface::class);
+        $mockHandler = $this->createMock(RequestHandlerInterface::class);
+
+        $mockHandler->expects($this->once())->method('handle')->with($stubRequest);
 
         $authentication = $this->stubAuthentication();
-        $authentication->authenticated($this->mockRequest, $this->mockHandler);
+        $authentication->authenticated($stubRequest, $mockHandler);
     }
 
     /**
-     * Test that isSecure returns true when secure option is false.
+     * Test that isSecure returns true when the secure option is false.
      */
-    public function testIsSecureObeysSecureOption()
+    #[Test]
+    public function isSecureObeysSecureOption()
     {
+        $stubRequest = $this->createStub(ServerRequestInterface::class);
+
         $authentication = $this->stubAuthentication([
             'secure' => false
         ]);
-        $this->assertTrue($authentication->isSecure($this->mockRequest));
+        $this->assertTrue($authentication->isSecure($stubRequest));
     }
 
     /**
      * Test that isSecure returns true when URI in relaxed option.
      */
-    public function testIsSecureObeysRelaxedOption()
+    #[Test]
+    public function isSecureObeysRelaxedOption()
     {
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+
         $mockUri = $this->createMock(UriInterface::class);
-        $this->mockRequest->expects($this->once())->method('getUri')->willReturn($mockUri);
+        $mockRequest->expects($this->once())->method('getUri')->willReturn($mockUri);
         $mockUri->expects($this->once())->method('getHost')->willReturn('relaxed.domain');
 
         $authentication = $this->stubAuthentication([
             'relaxed' => ['relaxed.domain']
         ]);
-        $this->assertTrue($authentication->isSecure($this->mockRequest));
+        $this->assertTrue($authentication->isSecure($mockRequest));
     }
 
     /**
-     * Test that isSecure properly checks request uri scheme.
+     * Test that isSecure properly checks the request uri scheme.
      * @param $scheme
      * @param $secure
-     * @dataProvider isSecureChecksUriSchemeProvider
      */
-    public function testIsSecureChecksUriScheme($scheme, $secure)
+    #[Test]
+    #[DataProvider('isSecureChecksUriSchemeProvider')]
+    public function isSecureChecksUriScheme($scheme, $secure)
     {
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+
         $mockUri = $this->createMock(UriInterface::class);
-        $this->mockRequest->expects($this->exactly(2))->method('getUri')->willReturn($mockUri);
+        $mockRequest->expects($this->exactly(2))->method('getUri')->willReturn($mockUri);
         $mockUri->expects($this->once())->method('getHost')->willReturn('production.domain');
         $mockUri->expects($this->once())->method('getScheme')->willReturn($scheme);
 
         $authentication = $this->stubAuthentication([
             'relaxed' => ['relaxed.domain']
         ]);
-        $this->assertEquals($secure, $authentication->isSecure($this->mockRequest));
+        $this->assertEquals($secure, $authentication->isSecure($mockRequest));
     }
-    public function isSecureChecksUriSchemeProvider()
+
+    public static function isSecureChecksUriSchemeProvider(): array
     {
         return [
             ['http', false],
@@ -267,9 +290,12 @@ class AuthenticationTest extends TestCase
     /**
      * Test fetching a token from the environment.
      */
-    public function testFetchTokenFromEnvironment()
+    #[Test]
+    public function fetchTokenFromEnvironment()
     {
-        $this->mockRequest
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+
+        $mockRequest
             ->expects($this->once())
             ->method('getServerParams')
             ->willReturn(['ENVIRONMENT_VARIABLE' => 'token']);
@@ -277,20 +303,23 @@ class AuthenticationTest extends TestCase
         $authentication = $this->stubAuthentication([
             'environment' => ['ENVIRONMENT_VARIABLE']
         ]);
-        $token = $authentication->fetchToken($this->mockRequest);
+        $token = $authentication->fetchToken($mockRequest);
         $this->assertEquals('token', $token);
     }
 
     /**
      * Test fetching a token from a header.
      */
-    public function testFetchTokenFromHeader()
+    #[Test]
+    public function fetchTokenFromHeader()
     {
-        $this->mockRequest
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+
+        $mockRequest
             ->expects($this->once())
             ->method('getServerParams')
             ->willReturn([]);
-        $this->mockRequest
+        $mockRequest
             ->expects($this->once())
             ->method('getHeader')
             ->with('HEADER_NAME')
@@ -300,25 +329,28 @@ class AuthenticationTest extends TestCase
             'environment' => ['ENVIRONMENT_VARIABLE'],
             'header' => 'HEADER_NAME'
         ]);
-        $token = $authentication->fetchToken($this->mockRequest);
+        $token = $authentication->fetchToken($mockRequest);
         $this->assertEquals('token', $token);
     }
 
     /**
      * Test fetching a token from a cookie.
      */
-    public function testFetchTokenFromCookie()
+    #[Test]
+    public function fetchTokenFromCookie()
     {
-        $this->mockRequest
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+
+        $mockRequest
             ->expects($this->once())
             ->method('getServerParams')
             ->willReturn([]);
-        $this->mockRequest
+        $mockRequest
             ->expects($this->once())
             ->method('getHeader')
             ->with('HEADER_NAME')
             ->willReturn([]);
-        $this->mockRequest
+        $mockRequest
             ->expects($this->once())
             ->method('getCookieParams')
             ->willReturn(['COOKIE_NAME' => 'token']);
@@ -328,25 +360,28 @@ class AuthenticationTest extends TestCase
             'header' => 'HEADER_NAME',
             'cookie' => 'COOKIE_NAME'
         ]);
-        $token = $authentication->fetchToken($this->mockRequest);
+        $token = $authentication->fetchToken($mockRequest);
         $this->assertEquals('token', $token);
     }
 
     /**
      * Test fetching a token that is not there.
      */
-    public function testFetchTokenNoMatch()
+    #[Test]
+    public function fetchTokenNoMatch()
     {
-        $this->mockRequest
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+
+        $mockRequest
             ->expects($this->once())
             ->method('getServerParams')
             ->willReturn([]);
-        $this->mockRequest
+        $mockRequest
             ->expects($this->once())
             ->method('getHeader')
             ->with('HEADER_NAME')
             ->willReturn([]);
-        $this->mockRequest
+        $mockRequest
             ->expects($this->once())
             ->method('getCookieParams')
             ->willReturn([]);
@@ -356,25 +391,28 @@ class AuthenticationTest extends TestCase
             'header' => 'HEADER_NAME',
             'cookie' => 'COOKIE_NAME'
         ]);
-        $token = $authentication->fetchToken($this->mockRequest);
+        $token = $authentication->fetchToken($mockRequest);
         $this->assertEquals('', $token);
     }
 
     /**
      * Test fetching a token that is not there without checking cookies.
      */
-    public function testFetchTokenNoMatchWithCookies()
+    #[Test]
+    public function fetchTokenNoMatchWithCookies()
     {
-        $this->mockRequest
+        $mockRequest = $this->createMock(ServerRequestInterface::class);
+
+        $mockRequest
             ->expects($this->once())
             ->method('getServerParams')
             ->willReturn([]);
-        $this->mockRequest
+        $mockRequest
             ->expects($this->once())
             ->method('getHeader')
             ->with('HEADER_NAME')
             ->willReturn([]);
-        $this->mockRequest
+        $mockRequest
             ->expects($this->never())
             ->method('getCookieParams');
 
@@ -383,14 +421,15 @@ class AuthenticationTest extends TestCase
             'header' => 'HEADER_NAME',
             'cookie' => false
         ]);
-        $token = $authentication->fetchToken($this->mockRequest);
+        $token = $authentication->fetchToken($mockRequest);
         $this->assertEquals('', $token);
     }
 
     /**
      * Test retrieving middleware options.
      */
-    public function testGetOptions()
+    #[Test]
+    public function getOptions()
     {
         $options = [
             'secure'      => true,
@@ -403,6 +442,7 @@ class AuthenticationTest extends TestCase
             'payload'     => null,
             'attribute'   => 'token',
             'logger'      => null,
+            'queryparam'  => null
         ];
         $authentication = $this->stubAuthentication($options);
 
@@ -412,7 +452,8 @@ class AuthenticationTest extends TestCase
     /**
      * Test retrieving a single option.
      */
-    public function testGetOption()
+    #[Test]
+    public function getOption()
     {
         $options = [
             'secure'      => true,

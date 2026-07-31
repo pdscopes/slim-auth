@@ -8,10 +8,7 @@ use Slim\Middleware\Authorisation;
 
 class TestAuthorisation extends Authorisation
 {
-    /**
-     * @var bool
-     */
-    private $validate;
+    private bool $validate;
 
     public function __construct(ContainerInterface $ci, bool $validate)
     {
@@ -19,9 +16,7 @@ class TestAuthorisation extends Authorisation
         $this->validate = $validate;
     }
 
-    /**
-     * @inheritDoc
-     */
+    #[\Override]
     protected function hasAuthorisation(ServerRequestInterface $request): bool
     {
         return $this->validate;

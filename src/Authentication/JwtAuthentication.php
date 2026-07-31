@@ -3,6 +3,7 @@
 namespace Slim\Middleware\Authentication;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -12,10 +13,7 @@ use Slim\Middleware\Authentication;
 
 class JwtAuthentication extends Authentication
 {
-    /**
-     * @var object
-     */
-    protected $decoded;
+    protected object $decoded;
 
     /**
      * JwtAuthentication constructor.
@@ -34,11 +32,14 @@ class JwtAuthentication extends Authentication
         ]);
     }
 
-    public function validate($token): bool
+    public function validate(mixed $token): bool
     {
         try {
             // Attempt to decode the token
-            $token = JWT::decode($token, $this->options['secret'], (array) $this->options['algorithm']);
+            $keys = array_reduce($this->options['algorithm'], function (array $arr, string $alg) {
+                return array_merge([$alg => new Key($this->options['secret'], $alg)], $arr);
+            }, []);
+            $token = JWT::decode($token, $keys);
             // Store the decoded token if successful
             $this->decoded = $token;
             return true;

@@ -2,8 +2,9 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Integration\Authentication;
 
-use Firebase\JWT\JWT;
+use MadeSimple\Slim\Middleware\Tests\GeneratesBearerStringTrait;
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -14,15 +15,10 @@ use Slim\Psr7\Factory\ServerRequestFactory;
 
 class SlimJwtAuthenticationTest extends TestCase
 {
-    /**
-     * @var \Slim\App
-     */
-    private $app;
+    use GeneratesBearerStringTrait;
 
-    /**
-     * @var ServerRequestInterface
-     */
-    private $request;
+    private \Slim\App $app;
+    private ServerRequestInterface $request;
 
     protected function setUp(): void
     {
@@ -40,7 +36,8 @@ class SlimJwtAuthenticationTest extends TestCase
         });
     }
 
-    public function testJwtRequestInsecure()
+    #[Test]
+    public function jwtRequestInsecure()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
@@ -48,7 +45,8 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->app->handle($this->request);
     }
 
-    public function testJwtFetchTokenMissing()
+    #[Test]
+    public function jwtFetchTokenMissing()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
@@ -58,12 +56,13 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->app->handle($this->request);
     }
 
-    public function testJwtFetchTokenHeaderValid()
+    #[Test]
+    public function jwtFetchTokenHeaderValid()
     {
-        $this->request = $this->request->withHeader('Authorization', 'Bearer ' . JWT::encode(['uuid' => '123'], 'secret'));
+        $this->request = $this->request->withHeader('Authorization', $this->generateBearer());
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
-            'secret' => 'secret',
+            'secret' => $this->stdKey,
         ]));
         $response = $this->app->handle($this->request);
 
@@ -71,26 +70,28 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->assertEquals('123', (string) $response->getBody());
     }
 
-    public function testJwtFetchTokenHeaderInvalid()
+    #[Test]
+    public function jwtFetchTokenHeaderInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->request = $this->request->withHeader('Authorization', 'Bearer ' . JWT::encode(['uuid' => '123'], 'invalid'));
+        $this->request = $this->request->withHeader('Authorization', $this->generateBearer(key: $this->altKey));
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
-            'secret' => 'secret',
+            'secret' => $this->stdKey,
         ]));
         $this->app->handle($this->request);
     }
 
-    public function testJwtFetchTokenServerParamValid()
+    #[Test]
+    public function jwtFetchTokenServerParamValid()
     {
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
-            'HTTP_AUTH' => JWT::encode(['uuid' => '123'], 'secret'),
+            'HTTP_AUTH' => $this->generateJwt(),
         ]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure'      => false,
-            'secret'      => 'secret',
+            'secret'      => $this->stdKey,
             'environment' => ['HTTP_AUTH'],
         ]));
         $response = $this->app->handle($this->request);
@@ -99,29 +100,31 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->assertEquals('123', (string) $response->getBody());
     }
 
-    public function testJwtFetchTokenServerParamInvalid()
+    #[Test]
+    public function jwtFetchTokenServerParamInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
         $this->request = (new ServerRequestFactory())->createServerRequest('GET', '/', [
-            'HTTP_AUTH' => JWT::encode(['uuid' => '123'], 'invalid'),
+            'HTTP_AUTH' => $this->generateJwt(key: $this->altKey),
         ]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure'      => false,
-            'secret'      => 'secret',
+            'secret'      => $this->stdKey,
             'environment' => ['HTTP_AUTH'],
         ]));
         $this->app->handle($this->request);
     }
 
-    public function testJwtFetchTokenPayloadArrayValid()
+    #[Test]
+    public function jwtFetchTokenPayloadArrayValid()
     {
-        $payload = ['token' => JWT::encode(['uuid' => '123'], 'secret')];
+        $payload = ['token' => $this->generateJwt()];
         $this->request = $this->request->withParsedBody($payload);
 
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure'  => false,
-            'secret'  => 'secret',
+            'secret'  => $this->stdKey,
             'payload' => 'token',
         ]));
         $response = $this->app->handle($this->request);
@@ -130,15 +133,16 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->assertEquals('123', (string) $response->getBody());
     }
 
-    public function testJwtFetchTokenPayloadObjectValid()
+    #[Test]
+    public function jwtFetchTokenPayloadObjectValid()
     {
         $payload = new \stdClass();
-        $payload->token = JWT::encode(['uuid' => '123'], 'secret');
+        $payload->token = $this->generateJwt();
         $this->request = $this->request->withParsedBody($payload);
 
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure'  => false,
-            'secret'  => 'secret',
+            'secret'  => $this->stdKey,
             'payload' => 'token',
         ]));
         $response = $this->app->handle($this->request);
@@ -147,25 +151,27 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->assertEquals('123', (string) $response->getBody());
     }
 
-    public function testJwtFetchTokenPayloadInvalid()
+    #[Test]
+    public function jwtFetchTokenPayloadInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->request = $this->request->withParsedBody(['token' => JWT::encode(['uuid' => '123'], 'invalid')]);
+        $this->request = $this->request->withParsedBody(['token' => $this->generateJwt(key: $this->altKey)]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
-            'secret' => 'secret',
+            'secret' => $this->stdKey,
             'payload' => 'token',
         ]));
         $this->app->handle($this->request);
     }
 
-    public function testJwtFetchTokenCookieValid()
+    #[Test]
+    public function jwtFetchTokenCookieValid()
     {
-        $this->request = $this->request->withCookieParams(['token' => JWT::encode(['uuid' => '123'], 'secret')]);
+        $this->request = $this->request->withCookieParams(['token' => $this->generateJwt()]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
-            'secret' => 'secret',
+            'secret' => $this->stdKey,
             'cookie' => 'token',
         ]));
         $response = $this->app->handle($this->request);
@@ -174,14 +180,15 @@ class SlimJwtAuthenticationTest extends TestCase
         $this->assertEquals('123', (string) $response->getBody());
     }
 
-    public function testJwtFetchTokenCookieInvalid()
+    #[Test]
+    public function jwtFetchTokenCookieInvalid()
     {
         $this->expectException(HttpUnauthorizedException::class);
 
-        $this->request = $this->request->withCookieParams(['token' => JWT::encode(['uuid' => '123'], 'invalid')]);
+        $this->request = $this->request->withCookieParams(['token' => $this->generateJwt(key: $this->altKey)]);
         $this->app->add(new JwtAuthentication($this->app->getContainer(), [
             'secure' => false,
-            'secret' => 'secret',
+            'secret' => $this->stdKey,
             'cookie' => 'token',
         ]));
         $this->app->handle($this->request);

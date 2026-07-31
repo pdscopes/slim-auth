@@ -2,8 +2,11 @@
 
 namespace MadeSimple\Slim\Middleware\Tests\Unit\Authentication;
 
-use Firebase\JWT\JWT;
+use MadeSimple\Slim\Middleware\Tests\GeneratesBearerStringTrait;
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -12,14 +15,11 @@ use Slim\Middleware\Authentication\JwtAuthentication;
 
 class JwtAuthenticationTest extends TestCase
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $ci;
+    use GeneratesBearerStringTrait;
 
-    /**
-     * @InheritDoc
-     */
+    protected ContainerInterface $ci;
+
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,9 +28,10 @@ class JwtAuthenticationTest extends TestCase
     }
 
     /**
-     * Test that construct without options has all default values.
+     * Test that a class construction without options has all default values.
      */
-    public function testConstructWithoutOptions()
+    #[Test]
+    public function constructWithoutOptions()
     {
         $auth = new JwtAuthentication($this->ci, []);
 
@@ -47,16 +48,16 @@ class JwtAuthenticationTest extends TestCase
             'logger'      => null,
             'secret'      => '',
             'algorithm'   => ['HS256', 'HS512', 'HS384'],
+            'queryparam'  => null,
         ], $auth->getOptions());
     }
 
     /**
      * Test that construct with options overrides the default values.
-     * @param string $option
-     * @param mixed  $value
-     * @dataProvider constructWithOptionsProvider
      */
-    public function testConstructWithOptions($option, $value)
+    #[Test]
+    #[DataProvider('constructWithOptionsProvider')]
+    public function constructWithOptions(string $option, mixed $value)
     {
         $auth = new JwtAuthentication($this->ci, [$option => $value]);
 
@@ -71,14 +72,16 @@ class JwtAuthenticationTest extends TestCase
             'payload'     => null,
             'attribute'   => 'token',
             'logger'      => null,
-            'secret'      => null,
+            'secret'      => '',
             'algorithm'   => ['HS256', 'HS512', 'HS384'],
+            'queryparam'  => null,
         ];
         $expected[$option] = $value;
 
         $this->assertEquals($expected, $auth->getOptions());
     }
-    public function constructWithOptionsProvider()
+
+    public static function constructWithOptionsProvider(): array
     {
         return [
             ['secure', false],
@@ -89,7 +92,7 @@ class JwtAuthenticationTest extends TestCase
             ['index', 5],
             ['cookie', 'cookie name'],
             ['attribute', 'attribute name'],
-            ['logger', new \stdClass],
+            ['logger', new \stdClass()],
             ['secret', 'JWT SECRET'],
             ['algorithm', ['ALGORITHM 1', 'ALGORITHM 2']],
         ];
@@ -98,7 +101,8 @@ class JwtAuthenticationTest extends TestCase
     /**
      * Test fetching a valid JWT.
      */
-    public function testFetchTokenValid()
+    #[Test]
+    public function fetchTokenValid()
     {
         $token = '123';
         $auth    = new JwtAuthentication($this->ci, []);
@@ -114,13 +118,14 @@ class JwtAuthenticationTest extends TestCase
     /**
      * Test validating a valid JWT.
      */
-    public function testValidate()
+    #[Test]
+    public function validate()
     {
-        $encoded = JWT::encode(['data' => 'value'], 'secret', 'HS256');
+        $encoded = $this->generateJwt(alg: 'HS256');
 
         $auth = new JwtAuthentication($this->ci, [
             'environment' => [],
-            'secret'      => 'secret',
+            'secret'      => $this->stdKey,
             'algorithm'   => ['HS256'],
         ]);
 
@@ -130,7 +135,8 @@ class JwtAuthenticationTest extends TestCase
     /**
      * Test validating an invalid JWT.
      */
-    public function testValidateInvalid()
+    #[Test]
+    public function validateInvalid()
     {
         $encoded = 'invalid-token';
 

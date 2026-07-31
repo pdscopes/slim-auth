@@ -2,29 +2,37 @@
 
 namespace Slim\Middleware;
 
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Slim\Exception\HttpForbiddenException;
 
 abstract class Authorisation implements MiddlewareInterface
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $ci;
+    protected ?LoggerInterface $logger;
 
     /**
      * Middleware constructor.
      *
      * @param ContainerInterface $ci
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function __construct(ContainerInterface $ci)
     {
-        $this->ci = $ci;
+        if ($ci->has('logger')) {
+            $this->logger = $ci->get('logger');
+        } elseif ($ci->has(LoggerInterface::class)) {
+            $this->logger = $ci->get(LoggerInterface::class);
+        } else {
+            $this->logger = null;
+        }
     }
 
     /**
@@ -43,7 +51,7 @@ abstract class Authorisation implements MiddlewareInterface
 
     /**
      * Controls access to the current route based on the authorisation rules of the current route.
-     * Blocks the request if the authorisation rules are meet, otherwise
+     * Blocks the request if the authorisation rules are met, otherwise
      * allows the request forward through this middleware.
      *
      * @param ServerRequestInterface  $request
@@ -88,15 +96,10 @@ abstract class Authorisation implements MiddlewareInterface
 
     /**
      * @see LogLevel
-     * @param string $level
-     * @param string $message
-     * @param array  $context
      */
-    protected function log($level, $message, array $context = []): void
+    protected function log(string $level, string $message, array $context = []): void
     {
-        if ($this->ci->has('logger')) {
-            $this->ci->get('logger')->log($level, $message, $context);
-        }
+        $this->logger?->log($level, $message, $context);
     }
 
     /**
@@ -106,5 +109,5 @@ abstract class Authorisation implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @return bool
      */
-    protected abstract function hasAuthorisation(ServerRequestInterface $request): bool;
+    abstract protected function hasAuthorisation(ServerRequestInterface $request): bool;
 }

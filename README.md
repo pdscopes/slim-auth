@@ -1,7 +1,7 @@
 # madesimple/slim-auth
 [![Build Status](https://travis-ci.org/pdscopes/slim-auth.svg?branch=master)](https://travis-ci.org/pdscopes/slim-auth)
 
-An authentication and authorisation middleware for [Slim 4 framework](https://www.slimframework.com/).
+Authentication and authorisation middleware for [Slim 4 framework](https://www.slimframework.com/).
 
 ## Installation
 ```
@@ -9,13 +9,13 @@ composer require madesimple/slim-auth
 ```
 
 ## Authentication
-A middleware to determine whether the request contains valid authentication token. The middleware has been designed so that it can easily be extended to:
+A middleware to determine whether the request contains a valid authentication token. The middleware has been designed so that it can easily be extended to:
 
 * handle any type of token retrieval;
 * handle any type of validation method; and,
 * perform any set of actions if authentication was successful.
 
-To use an Authentication middleware to your Slim application simply:
+To use the Authentication middleware to your Slim application, simply:
 ```php
 use Slim\Middleware\Authentication\SimpleTokenAuthentication;
 /** @var \Slim\App $app The Slim application */
@@ -34,7 +34,7 @@ $app->get($pattern, $callable)
     ->add(new SimpleTokenAuthentication($app->getContainer(), $options));
 ```
 
-*Side node*: We recommend that if you are going to be adding same authentication to more than more groups/routes to put the middleware in `dependencies.php`.
+*Side node*: We recommend that if you are going to be adding the same authentication to more than more groups/routes to put the middleware in `dependencies.php`.
 
 
 Default options for authentication are:
@@ -64,7 +64,7 @@ Default options for authentication are:
 ```
 
 
-When authentication fails the middleware throws an `HttpUnauthorizedException` is thrown.
+When authentication fails, the middleware throws an `HttpUnauthorizedException` is thrown.
 
 ### SimpleTokenAuthentication
 Simple token authentication is an implementation of Authentication which allows the user to provide a callable to validate a token. The callable is passed to Simple token authentication using the option:
@@ -84,7 +84,7 @@ function ($token): bool {
 ```
 
 ### JwtAuthentication
-JWT authentication is an implementation of Authentication which allows the user to use JWT as authentication tokens. JWT authentication overrides the default regex, and adds two extra options:
+JWT authentication is an implementation of Authentication which allows the user to use JWT as authentication tokens. JWT authentication overrides the default regex and adds two extra options:
 ```php
 [
     // string - Overrides the default regex
@@ -102,6 +102,6 @@ JWT authentication is an implementation of Authentication which allows the user 
 ## Authorisation
 A middleware to determine whether an authenticated request has authorisation to access the requested route.
 
-When Authorisation fails the middleware throws an `HttpForbiddenException` exception.
+When Authorisation fails, the middleware throws an `HttpForbiddenException` exception.
 
-_Note_: If you need to access the route from within your app middleware you will need to add the `Middleware\RoutingMiddleware` middleware to your application just before you call `run()`.
+_Note_: If you need to access the route from within your app middleware, you will need to add the `Middleware\RoutingMiddleware` middleware to your application just before you call `run()`.

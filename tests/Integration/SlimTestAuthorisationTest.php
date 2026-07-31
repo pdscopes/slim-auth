@@ -4,6 +4,7 @@ namespace MadeSimple\Slim\Middleware\Tests\Integration;
 
 use MadeSimple\Slim\Middleware\Tests\TestAuthorisation;
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -13,15 +14,8 @@ use Slim\Psr7\Factory\ServerRequestFactory;
 
 class SlimTestAuthorisationTest extends TestCase
 {
-    /**
-     * @var \Slim\App
-     */
-    private $app;
-
-    /**
-     * @var ServerRequestInterface
-     */
-    private $request;
+    private \Slim\App $app;
+    private ServerRequestInterface $request;
 
     protected function setUp(): void
     {
@@ -38,7 +32,8 @@ class SlimTestAuthorisationTest extends TestCase
         });
     }
 
-    public function testProcessHasAuthorisationTrue()
+    #[Test]
+    public function processHasAuthorisationTrue()
     {
         $this->app->add(new TestAuthorisation($this->app->getContainer(), true));
         $response = $this->app->handle($this->request);
@@ -46,7 +41,8 @@ class SlimTestAuthorisationTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testProcessHasAuthorisationFalse()
+    #[Test]
+    public function processHasAuthorisationFalse()
     {
         $this->expectException(HttpForbiddenException::class);
 

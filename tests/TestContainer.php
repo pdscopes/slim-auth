@@ -2,30 +2,22 @@
 
 namespace MadeSimple\Slim\Middleware\Tests;
 
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-
 class TestContainer implements \Psr\Container\ContainerInterface
 {
-    /**
-     * @var array
-     */
-    private $data;
+    private array $data;
 
     /**
      * TestContainer constructor.
      *
      * @param array|null $data
      */
-    public function __construct(array $data = null)
+    public function __construct(?array $data = null)
     {
         $this->data = $data ?? [];
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function get($id)
+    #[\Override]
+    public function get(string $id): mixed
     {
         if (!isset($this->data[$id])) {
             throw new TestNotFoundException("{$id} not found in container");
@@ -33,19 +25,13 @@ class TestContainer implements \Psr\Container\ContainerInterface
         return $this->data[$id];
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function has($id)
+    #[\Override]
+    public function has(string $id): bool
     {
         return isset($this->data[$id]);
     }
 
-    /**
-     * @param $id
-     * @param $val
-     */
-    public function set($id, $val)
+    public function set(string|int $id, mixed $val): void
     {
         $this->data[$id] = $val;
     }

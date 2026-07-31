@@ -3,20 +3,17 @@
 namespace MadeSimple\Slim\Middleware\Tests\Unit\Authentication;
 
 use MadeSimple\Slim\Middleware\Tests\TestContainer;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Slim\Middleware\Authentication\SimpleTokenAuthentication;
 
 class SimpleTokenAuthenticationTest extends TestCase
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $ci;
+    protected ContainerInterface $ci;
 
-    /**
-     * @InheritDoc
-     */
+    #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,9 +22,10 @@ class SimpleTokenAuthenticationTest extends TestCase
     }
 
     /**
-     * Test that construct without options has all default values.
+     * Test that the class construction without options has all default values.
      */
-    public function testConstructWithoutOptions()
+    #[Test]
+    public function constructWithoutOptions()
     {
         $auth = new SimpleTokenAuthentication($this->ci, []);
 
@@ -43,16 +41,16 @@ class SimpleTokenAuthenticationTest extends TestCase
             'attribute'   => 'token',
             'logger'      => null,
             'validate'    => null,
+            'queryparam'  => null
         ], $auth->getOptions());
     }
 
     /**
      * Test that construct with options overrides the default values.
-     * @param string $option
-     * @param mixed  $value
-     * @dataProvider constructWithOptionsProvider
      */
-    public function testConstructWithOptions($option, $value)
+    #[Test]
+    #[DataProvider('constructWithOptionsProvider')]
+    public function constructWithOptions(string $option, mixed $value)
     {
         $auth = new SimpleTokenAuthentication($this->ci, [$option => $value]);
 
@@ -68,12 +66,14 @@ class SimpleTokenAuthenticationTest extends TestCase
             'attribute'   => 'token',
             'logger'      => null,
             'validate'    => null,
+            'queryparam'  => null
         ];
         $expected[$option] = $value;
 
         $this->assertEquals($expected, $auth->getOptions());
     }
-    public function constructWithOptionsProvider()
+
+    public static function constructWithOptionsProvider(): array
     {
         return [
             ['secure', false],
@@ -84,15 +84,16 @@ class SimpleTokenAuthenticationTest extends TestCase
             ['index', 5],
             ['cookie', 'cookie name'],
             ['attribute', 'attribute name'],
-            ['logger', new \stdClass],
-            ['validate', function () {}],
+            ['logger', new \stdClass()],
+            ['validate', fn () => true],
         ];
     }
 
     /**
-     * Test that validate defaults to false.
+     * Test that "validate" defaults to false.
      */
-    public function testValidateNotSet()
+    #[Test]
+    public function validateNotSet()
     {
         $auth = new SimpleTokenAuthentication($this->ci, []);
 
@@ -100,9 +101,10 @@ class SimpleTokenAuthenticationTest extends TestCase
     }
 
     /**
-     * Test that validate uses the callable provided.
+     * Test that "validate" uses the callable provided.
      */
-    public function testValidateWithCallable()
+    #[Test]
+    public function validateWithCallable()
     {
         $auth = new SimpleTokenAuthentication($this->ci, [
             'validate' => function ($token) {
@@ -117,7 +119,8 @@ class SimpleTokenAuthenticationTest extends TestCase
     /**
      * Test that validate properly binds the Slim container to the callable provided.
      */
-    public function testValidateWithCallableBindsContainer()
+    #[Test]
+    public function validateWithCallableBindsContainer()
     {
         $this->ci->set('api_key', 'token');
         $auth = new SimpleTokenAuthentication($this->ci, [
